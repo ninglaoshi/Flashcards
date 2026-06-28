@@ -494,24 +494,46 @@
             document.getElementById('undo-element').style.visibility = historicalReviewStack.length > 0 ? 'visible' : 'hidden';
 
             const frontFace = document.getElementById('card-front-face');
+            const frontText = document.getElementById('front-display-text');
             const backText = document.getElementById('back-display-main');
-            
-            const engLen = card.english.length;
-            if (engLen > 90) backText.style.fontSize = "1.2rem";
-            else if (engLen > 50) backText.style.fontSize = "1.6rem";
-            else backText.style.fontSize = "2.2rem";
 
             if (card.type === 'CN_TO_EN') {
                 frontFace.className = "card-face card-front cn-mode";
                 document.getElementById('front-pill-tag').innerText = "Recognition";
-                document.getElementById('front-display-text').innerText = card.chinese;
+                
+                // 1. Evaluate FRONT text length (Chinese)
+                const cnFrontLen = card.chinese.length;
+                if (cnFrontLen > 12) frontText.style.fontSize = "2.0rem";
+                else if (cnFrontLen > 6) frontText.style.fontSize = "2.6rem";
+                else frontText.style.fontSize = "3.2rem";
+                frontText.innerText = card.chinese;
+                
+                // 2. Evaluate BACK text length (English) independently
+                const enBackLen = card.english.length;
+                if (enBackLen > 90) backText.style.fontSize = "1.2rem";
+                else if (enBackLen > 50) backText.style.fontSize = "1.6rem";
+                else backText.style.fontSize = "2.2rem";
                 backText.innerText = card.english;
+                
                 document.getElementById('back-display-sub').innerText = card.pinyin;
             } else {
                 frontFace.className = "card-face card-front en-mode";
                 document.getElementById('front-pill-tag').innerText = "Production";
-                document.getElementById('front-display-text').innerText = card.english;
+                
+                // 1. Evaluate FRONT text length (English) independently
+                const enFrontLen = card.english.length;
+                if (enFrontLen > 90) frontText.style.fontSize = "1.3rem";
+                else if (enFrontLen > 50) frontText.style.fontSize = "1.8rem";
+                else frontText.style.fontSize = "2.8rem";
+                frontText.innerText = card.english;
+                
+                // 2. Evaluate BACK text length (Chinese) independently
+                const cnBackLen = card.chinese.length;
+                if (cnBackLen > 12) backText.style.fontSize = "1.5rem";
+                else if (cnBackLen > 6) backText.style.fontSize = "1.9rem";
+                else backText.style.fontSize = "2.5rem";
                 backText.innerText = card.chinese;
+                
                 document.getElementById('back-display-sub').innerText = card.pinyin;
             }
         }
