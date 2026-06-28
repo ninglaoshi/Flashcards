@@ -378,6 +378,7 @@
                 const english = cols[1] ? cols[1] : cols[3];
                 const pinyin = cols[2] ? cols[2] : cols[4];
 
+                // F=5 (C2E Score), G=6 (E2C Score), H=7 (C2E Count), I=8 (E2C Count), J=9 (C2E Time), K=10 (E2C Time)
                 const c2eScore = cols[5] ? parseInt(cols[5]) : 0;
                 const e2cScore = cols[6] ? parseInt(cols[6]) : 0;
                 const c2eCount = cols[7] ? parseInt(cols[7]) : 0;
@@ -409,16 +410,24 @@
                     activeQueue.push(card);
                     reviewsDue++;
                 } else {
+                    // NEW MORE RELAXED SRS MATURE TIMING MATRIX
                     let intervalDays = 0;
-                    if (card.score === 1) intervalDays = 0.005;
-                    else if (card.score === 2) intervalDays = 1;
-                    else if (card.score === 3) intervalDays = 3;
-                    else if (card.score === 4) intervalDays = 7;
-                    else if (card.score === 5) intervalDays = 14;
+                    if (card.score === 1) intervalDays = 0.003; // Immediate review
+                    else if (card.score === 2) intervalDays = 1;     // 1 Day spacing
+                    else if (card.score === 3) intervalDays = 4;     // 4 Days spacing
+                    else if (card.score === 4) intervalDays = 10;    // 10 Days spacing
+                    else if (card.score === 5) intervalDays = 24;    // 24 Days spacing
 
                     const daysElapsed = (now - card.lastTime) / (1000 * 60 * 60 * 24);
+                    const minutesElapsed = daysElapsed * 24 * 60;
+
+                    // CONDITIONAL 5-MINUTE LOCKOUT ONLY IF RECENT MASTERED CHOSEN
+                    if (card.score === 5 && minutesElapsed < 5) {
+                        return; // Completely skipped from the active review queue
+                    }
+
                     if (daysElapsed >= intervalDays) {
-                        card.urgency = daysElapsed / (intervalDays || 0.005);
+                        card.urgency = daysElapsed / (intervalDays || 0.003);
                         activeQueue.push(card);
                         if (card.score > 0) reviewsDue++;
                     }
@@ -439,11 +448,12 @@
                 actionBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
             } else {
                 actionBtn.innerText = "Start Session";
+                actionBtn.style.background = "linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)";
             }
         }
 
         function startSession() {
-            if(activeQueue.length === 0) isOverstudyMode = true;
+            isOverstudyMode = (activeQueue.length === 0);
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('study-space').style.display = 'flex';
             renderNextCardInstance();
@@ -501,14 +511,12 @@
                 frontFace.className = "card-face card-front cn-mode";
                 document.getElementById('front-pill-tag').innerText = "Recognition";
                 
-                // 1. Evaluate FRONT text length (Chinese)
                 const cnFrontLen = card.chinese.length;
                 if (cnFrontLen > 12) frontText.style.fontSize = "2.0rem";
                 else if (cnFrontLen > 6) frontText.style.fontSize = "2.6rem";
                 else frontText.style.fontSize = "3.2rem";
                 frontText.innerText = card.chinese;
                 
-                // 2. Evaluate BACK text length (English) independently
                 const enBackLen = card.english.length;
                 if (enBackLen > 90) backText.style.fontSize = "1.2rem";
                 else if (enBackLen > 50) backText.style.fontSize = "1.6rem";
@@ -520,14 +528,12 @@
                 frontFace.className = "card-face card-front en-mode";
                 document.getElementById('front-pill-tag').innerText = "Production";
                 
-                // 1. Evaluate FRONT text length (English) independently
                 const enFrontLen = card.english.length;
                 if (enFrontLen > 90) frontText.style.fontSize = "1.3rem";
                 else if (enFrontLen > 50) frontText.style.fontSize = "1.8rem";
                 else frontText.style.fontSize = "2.8rem";
                 frontText.innerText = card.english;
                 
-                // 2. Evaluate BACK text length (Chinese) independently
                 const cnBackLen = card.chinese.length;
                 if (cnBackLen > 12) backText.style.fontSize = "1.5rem";
                 else if (cnBackLen > 6) backText.style.fontSize = "1.9rem";
