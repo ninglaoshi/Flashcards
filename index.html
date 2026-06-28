@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Flashcards SRS</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --background: #f5f7fa;
+            --card-front: #ffffff;
+            --card-back: #eef2f7;
+            --text: #333333;
+            --btn-1: #e74c3c;
+            --btn-2: #e67e22;
+            --btn-3: #f1c40f;
+            --btn-4: #3498db;
+            --btn-5: #2ecc71;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 { font-size: 1.4rem; margin-bottom: 5px; font-weight: 600; text-align: center; }
+        .subtitle { font-size: 0.9rem; color: #666; margin-bottom: 20px; text-align: center; }
+
+        .flashcard-container {
+            width: 100%;
+            max-width: 350px;
+            height: 260px;
+            perspective: 1000px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .flashcard.flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 2px solid #e1e8ed;
+        }
+
+        .card-front { background-color: var(--card-front); }
+        .card-back { background-color: var(--card-back); transform: rotateY(180deg); border-color: var(--primary); }
+
+        .main-text { font-size: 2.2rem; font-weight: bold; margin-bottom: 10px; }
+        .sub-text { font-size: 1.2rem; color: #555; margin-top: 5px; }
+        .label { font-size: 0.75rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+
+        .grading-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .hint-text { text-align: center; color: #888; font-size: 0.9rem; margin-bottom: 10px; }
+
+        .grading-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .grad-btn {
+            border: none;
+            color: white;
+            padding: 12px 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+            text-align: center;
+        }
+        .grad-btn:active { transform: scale(0.95); }
+        .b1 { background-color: var(--btn-1); }
+        .b2 { background-color: var(--btn-2); }
+        .b3 { background-color: var(--btn-3); color: #333; }
+        .b4 { background-color: var(--btn-4); }
+        .b5 { background-color: var(--btn-5); }
+
+        .msg-screen {
+            text-align: center;
+            max-width: 350px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        .msg-screen h2 { margin-top: 0; color: #2ecc71; }
+        .msg-screen button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        #loading { color: var(--primary); font-weight: bold; }
+        .syncing-indicator {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sync-indicator" class="syncing-indicator">Saving to Cloud...</div>
+
+    <div id="loading">Connecting to Google Sheets database...</div>
+
+    <div id="study-interface" style="display: none; width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <h1 id="app-title">Vocab Study</h1>
+        <div class="subtitle" id="deck-counter">Loading stats...</div>
+
+        <div class="flashcard-container">
+            <div class="flashcard" id="card" onclick="flipCard()">
+                <div class="card-face card-front">
+                    <div class="label" id="front-label">Prompt</div>
+                    <div class="main-text" id="front-text">...</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="label">Answer</div>
+                    <div class="main-text" id="back-main">...</div>
+                    <div class="sub-text" id="back-sub">...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grading-container">
+            <div id="hint" class="hint-text">Tap card to see answer</div>
+            <div id="grading-controls" class="grading-buttons" style="display: none;">
+                <button class="grad-btn b1" onclick="submitGrade(1)">No Clue</button>
+                <button class="grad-btn b2" onclick="submitGrade(2)">Struggled</button>
+                <button class="grad-btn b3" onclick="submitGrade(3)">Hesitant</button>
+                <button class="grad-btn b4" onclick="submitGrade(4)">Good</button>
+                <button class="grad-btn b5" onclick="submitGrade(5)">Instant</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="break-screen" class="msg-screen" style="display: none;">
+        <h2>🎉 All Caught Up!</h2>
+        <p>Your scheduled reviews are completed for now. Your brain earned a well-deserved break!</p>
+        <button onclick="activateOverstudyMode()">Keep Studying Anyway</button>
+    </div>
+
+    <script>
+        // URLs linking everything together
+        const READ_URL = `https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv`;
+        const WRITE_URL = `https://script.google.com/macros/s/AKfycbz4hg446isJBp97-1d7BINvID_2k8w2AYcyTB9pNL1dOPmLFzhCTUgaFOX0P2qGW157/exec`;
+
+        let masterDeck = [];
+        let activeQueue = [];
+        let currentCardIndex = 0;
+        let isFlipped = false;
+        let isOverstudyMode = false;
+
+        // Fetch data upon load
+        fetch(READ_URL)
+            .then(res => res.text())
+            .then(csvText => {
+                parseCSVData(csvText);
+                buildReviewQueue();
+                document.getElementById('loading').style.display = 'none';
+                launchNextCard();
+            })
+            .catch(err => {
+                document.getElementById('loading').innerText = "Failed to load spreadsheet. Check sharing configurations.";
+                console.error(err);
+            });
+
+        function parseCSVData(text) {
+            const lines = text.split('\n');
+            // Skip header row
+            for(let i = 1; i < lines.length; i++) {
+                if(!lines[i].trim()) continue;
+                
+                // Regex parser handling potential commas embedded inside strings
+                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+                
+                if(!cols[0]) continue; // Skip blank rows
+
+                // Resolve manual override hierarchy logic
+                const chinese = cols[0];
+                const english = cols[1] ? cols[1] : cols[3];
+                const pinyin = cols[2] ? cols[2] : cols[4];
+
+                // Pull current score histories (Default to 0 / null if blank)
+                const c2eScore = cols[5] ? parseInt(cols[5]) : 0;
+                const e2cScore = cols[6] ? parseInt(cols[6]) : 0;
+                const c2eCount = cols[7] ? parseInt(cols[7]) : 0;
+                const e2cCount = cols[8] ? parseInt(cols[8]) : 0;
+                
+                const c2eTime = cols[9] ? new Date(cols[9]) : null;
+                const e2cTime = cols[10] ? new Date(cols[10]) : null;
+
+                // Split every row item into TWO separate tracking elements
+                masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
+                masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
+            }
+        }
+
+        function buildReviewQueue() {
+            const now = new Date();
+            activeQueue = [];
+
+            masterDeck.forEach(card => {
+                // Scenario 1: Unseen/New Cards
+                if (card.count === 0) {
+                    card.urgency = 100; 
+                    activeQueue.push(card);
+                    return;
+                }
+
+                // Scenario 2: Calculate Spaced Repetition Intervals
+                let intervalDays = 0;
+                if (card.score === 1) intervalDays = 0.005; // 7 minutes
+                else if (card.score === 2) intervalDays = 1;
+                else if (card.score === 3) intervalDays = 3;
+                else if (card.score === 4) intervalDays = 7;
+                else if (card.score === 5) intervalDays = 14;
+
+                const timeSinceReview = (now - card.lastTime) / (1000 * 60 * 60 * 24); // Day converter
+                
+                if (timeSinceReview >= intervalDays) {
+                    // Overdue math formulation for active sorting priorities
+                    card.urgency = timeSinceReview / (intervalDays || 0.005);
+                    activeQueue.push(card);
+                }
+            });
+
+            // Scramble/Randomize new elements slightly so entries are varied
+            activeQueue.sort((a, b) => b.urgency - a.urgency);
+        }
+
+        function launchNextCard() {
+            const interfaceDiv = document.getElementById('study-interface');
+            const breakDiv = document.getElementById('break-screen');
+            
+            // Check if queue has concluded
+            if (activeQueue.length === 0 && !isOverstudyMode) {
+                interfaceDiv.style.display = 'none';
+                breakDiv.style.display = 'block';
+                return;
+            }
+
+            interfaceDiv.style.display = 'flex';
+            breakDiv.style.display = 'none';
+
+            // If entering free-play mode, select weakest historically tracked cards
+            let currentCard;
+            if (isOverstudyMode) {
+                // Prioritize lower scores or items not viewed recently
+                masterDeck.sort((a,b) => (a.score || 0) - (b.score || 0));
+                currentCard = masterDeck[Math.floor(Math.random() * Math.min(10, masterDeck.length))];
+                document.getElementById('deck-counter').innerText = "Overstudy Mode (Free Play)";
+            } else {
+                currentCard = activeQueue[0];
+                document.getElementById('deck-counter').innerText = `${activeQueue.length} card(s) remaining in queue`;
+            }
+
+            // Lock content down
+            window.activeCard = currentCard;
+
+            // Reset UI animation states
+            const cardElement = document.getElementById('card');
+            cardElement.classList.remove('flipped');
+            isFlipped = false;
+            
+            document.getElementById('hint').style.display = 'block';
+            document.getElementById('grading-controls').style.display = 'none';
+
+            // Populate text elements according to orientation configurations
+            if(currentCard.type === 'CN_TO_EN') {
+                document.getElementById('front-label').innerText = "Chinese Characters";
+                document.getElementById('front-text').innerText = currentCard.chinese;
+                
+                document.getElementById('back-main').innerText = currentCard.english;
+                document.getElementById('back-sub').innerText = currentCard.pinyin;
+            } else {
+                document.getElementById('front-label').innerText = "English Meaning";
+                document.getElementById('front-text').innerText = currentCard.english;
+                
+                document.getElementById('back-main').innerText = currentCard.chinese;
+                document.getElementById('back-sub').innerText = currentCard.pinyin;
+            }
+        }
+
+        function flipCard() {
+            if(isFlipped) return; // Prevent double trigger locks
+            document.getElementById('card').classList.add('flipped');
+            isFlipped = true;
+            document.getElementById('hint').style.display = 'none';
+            document.getElementById('grading-controls').style.display = 'grid';
+        }
+
+        function submitGrade(score) {
+            const card = window.activeCard;
+            
+            // Optimistic Local System Update - immediately strip item out of localized focus loop
+            if(!isOverstudyMode) {
+                activeQueue.shift(); 
+            }
+            
+            // Update local memory properties
+            card.score = score;
+            card.count += 1;
+            card.lastTime = new Date();
+
+            // Background async trigger dispatching profile data to Google App Script pipeline
+            showSyncIndicator(true);
+            fetch(WRITE_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Solves structural local hosting cross-origin request configurations safely
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    word: card.chinese,
+                    type: card.type,
+                    score: score
+                })
+            }).then(() => {
+                showSyncIndicator(false);
+            }).catch(e => {
+                console.error("Cloud tracking write transmission dropped: ", e);
+                showSyncIndicator(false);
+            });
+
+            // Move to subsequent element instantly
+            launchNextCard();
+        }
+
+        function activateOverstudyMode() {
+            isOverstudyMode = true;
+            launchNextCard();
+        }
+
+        function showSyncIndicator(show) {
+            document.getElementById('sync-indicator').style.display = show ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>
