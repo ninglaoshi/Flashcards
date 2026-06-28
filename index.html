@@ -12,12 +12,10 @@
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             
-            /* Sleek Color Coding for Distinct States */
             --front-cn-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             --front-en-bg: linear-gradient(135deg, #1e2a38 0%, #0d1e2d 100%);
             --back-card-bg: linear-gradient(135deg, #0f172a 0%, #111827 100%);
             
-            /* Double-sized Ergonomic Grading Button Colors */
             --btn-1: #ef4444;
             --btn-2: #f97316;
             --btn-3: #eab308;
@@ -40,7 +38,7 @@
             overflow-x: hidden;
         }
 
-        /* DASHBOARD / WELCOME SCREEN */
+        /* DASHBOARD WELCOME SYSTEM */
         .dashboard-container {
             width: 100%;
             max-width: 380px;
@@ -164,7 +162,6 @@
             text-align: center;
         }
 
-        /* Distinct Front Layout Visual Subconscious Vectors */
         .card-front.cn-mode {
             background: var(--front-cn-bg);
             border: 2px solid rgba(56, 189, 248, 0.25);
@@ -174,7 +171,6 @@
             border: 2px solid rgba(16, 185, 129, 0.25);
         }
         
-        /* High Contrast Distinct Dark Answer Panel Background */
         .card-back {
             background: var(--back-card-bg);
             transform: rotateY(180deg);
@@ -199,7 +195,6 @@
         .back-main { font-size: 2.2rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
         .back-sub { font-size: 1.4rem; color: var(--accent-primary); font-weight: 400; }
 
-        /* GIANT ERGONOMIC THUMB BUTTON LAYOUTS */
         .controls-wrapper { width: 100%; min-height: 100px; }
         .hint-banner { text-align: center; color: var(--text-muted); font-size: 0.9rem; animation: pulse 2s infinite; padding: 20px; }
         
@@ -213,7 +208,6 @@
         .grad-btn {
             border: none;
             color: white;
-            /* Doubled operational tap height height profile target values */
             height: 75px; 
             font-size: 0.72rem;
             font-weight: 700;
@@ -229,7 +223,7 @@
             -webkit-tap-highlight-color: transparent;
         }
         .grad-btn:active { transform: scale(0.92); }
-        .grad-btn span { font-size: 1.1rem; } /* Emoji indicators */
+        .grad-btn span { font-size: 1.1rem; }
         
         .b1 { background: var(--btn-1); }
         .b2 { background: var(--btn-2); }
@@ -329,18 +323,18 @@
 
     <script>
         const READ_URL = `https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv`;
-        const WRITE_URL = `https://script.google.com/macros/s/AKfycbz4hg446isJBp97-1d7BINvID_2k8w2AYcyTB9pNL1dOPmLFzhCTUgaFOX0P2qGW157/exec`;
+        // Pointing cleanly directly to your newest deployed endpoint script URL address
+        const WRITE_URL = `https://script.google.com/macros/s/AKfycby3StwOXowIZlnjKHKjDVls8sxtOE2qBi9vWgm21R7z9gUCJofLMrbsSX06QAwlkP_GaA/exec`;
 
         let masterDeck = [];
         let activeQueue = [];
-        let historicalReviewStack = []; // Tracking log to manage undo requests
+        let historicalReviewStack = [];
+        let wordHistoryBuffer = []; // Anti-interference recent word list cache tracker
         let isFlipped = false;
         let isOverstudyMode = false;
 
-        // Set modern localized timestamp subtitle string
         document.getElementById('dash-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
-        // Connect directly to live sheet database records
         fetch(READ_URL)
             .then(res => res.text())
             .then(csvText => {
@@ -373,7 +367,6 @@
                 const c2eTime = cols[9] ? new Date(cols[9]) : null;
                 const e2cTime = cols[10] ? new Date(cols[10]) : null;
 
-                // Segment base row vectors into dual target arrays
                 masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
                 masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
             }
@@ -388,13 +381,11 @@
             activeQueue = [];
 
             masterDeck.forEach(card => {
-                // Tracking total tier buckets for status reports
                 if (card.count === 0) unviewedCount++;
                 else if (card.score === 1) lv1++;
                 else if (card.score === 5) lv5++;
                 else if (card.score > 1 && card.score < 5) mid++;
 
-                // SRS math parser
                 if (card.count === 0) {
                     card.urgency = 100;
                     activeQueue.push(card);
@@ -416,10 +407,8 @@
                 }
             });
 
-            // Sort sequence by prioritized urgency rating values
             activeQueue.sort((a, b) => b.urgency - a.urgency);
 
-            // Populate text targets
             document.getElementById('stat-due').innerText = reviewsDue;
             document.getElementById('stat-new').innerText = unviewedCount;
             document.getElementById('m-lv5').innerText = lv5;
@@ -446,7 +435,6 @@
         }
 
         function renderNextCardInstance() {
-            // Check terminal review parameters
             if (activeQueue.length === 0 && !isOverstudyMode) {
                 document.getElementById('study-space').style.display = 'none';
                 compileDashboardMetrics();
@@ -454,34 +442,56 @@
                 return;
             }
 
-            let card;
+            let card = null;
+            let selectedQueueIndex = 0;
+
             if (isOverstudyMode) {
-                // Free play pulls from any element via statistical evaluation sweeps
                 masterDeck.sort((a,b) => (a.score || 0) - (b.score || 0));
-                card = masterDeck[Math.floor(Math.random() * Math.min(8, masterDeck.length))];
+                // Anti-interference safety selection scan over small sample arrays
+                for (let i = 0; i < masterDeck.length; i++) {
+                    let potentialCard = masterDeck[i];
+                    if (!wordHistoryBuffer.includes(potentialCard.chinese)) {
+                        card = potentialCard;
+                        break;
+                    }
+                }
+                if (!card) card = masterDeck[0]; // Hard default fallback protection
                 document.getElementById('progress-counter').innerText = "Free Play Mode";
             } else {
-                card = activeQueue[0];
+                // Anti-Interference Search Filter Logic Loop
+                for (let i = 0; i < activeQueue.length; i++) {
+                    let potentialCard = activeQueue[i];
+                    // If the card word isn't listed inside our 3-word history buffer queue, select it!
+                    if (!wordHistoryBuffer.includes(potentialCard.chinese)) {
+                        card = potentialCard;
+                        selectedQueueIndex = i;
+                        break;
+                    }
+                }
+
+                // If everything remaining fits in the buffer history stack (tiny deck scenario), clear it early
+                if (!card) {
+                    card = activeQueue[0];
+                    selectedQueueIndex = 0;
+                }
+                
                 document.getElementById('progress-counter').innerText = `${activeQueue.length} items to evaluate`;
             }
 
             window.activeCard = card;
+            window.currentActiveIndexInQueue = selectedQueueIndex;
 
-            // Reset UI animation states
             const cardNode = document.getElementById('card-node');
             cardNode.classList.remove('flipped');
             isFlipped = false;
 
             document.getElementById('tap-hint').style.display = 'block';
             document.getElementById('grade-controls').style.display = 'none';
-
-            // Show or hide Undo button based on historical stack length
             document.getElementById('undo-element').style.visibility = historicalReviewStack.length > 0 ? 'visible' : 'hidden';
 
             const frontFace = document.getElementById('card-front-face');
             const pillTag = document.getElementById('front-pill-tag');
 
-            // Set layout elements dynamically to cue correct cognitive modes
             if (card.type === 'CN_TO_EN') {
                 frontFace.className = "card-face card-front cn-mode";
                 pillTag.innerText = "Character Recognition";
@@ -510,21 +520,25 @@
         function submitPerformanceRating(score) {
             const card = window.activeCard;
 
-            // Capture snapshots to manage precise structural undos later
             historicalReviewStack.push({
                 cardObject: card,
                 previousScore: card.score,
                 previousCount: card.count,
                 previousLastTime: card.lastTime,
-                wasInQueue: !isOverstudyMode
+                wasInQueue: !isOverstudyMode,
+                queuePosition: window.currentActiveIndexInQueue
             });
 
-            // Strip local item out of loop focal range array immediately
-            if (!isOverstudyMode) {
-                activeQueue.shift();
+            // Append the word into our anti-interference system log list tracking array
+            wordHistoryBuffer.push(card.chinese);
+            if (wordHistoryBuffer.length > 3) {
+                wordHistoryBuffer.shift(); // Evicts oldest tracked layout token from memory array limit
             }
 
-            // Write properties to local system profile state cache targets
+            if (!isOverstudyMode) {
+                activeQueue.splice(window.currentActiveIndexInQueue, 1);
+            }
+
             card.score = score;
             card.count += 1;
             card.lastTime = new Date();
@@ -536,17 +550,17 @@
         function triggerUndo() {
             if (historicalReviewStack.length === 0) return;
 
-            // Extract last interaction event profile parameters
             const logEntry = historicalReviewStack.pop();
             const card = logEntry.cardObject;
 
-            // Send standard rollback target instructions out to network background workers
+            // Remove undo object from word buffer trackers instantly
+            const bufferIdx = wordHistoryBuffer.lastIndexOf(card.chinese);
+            if(bufferIdx !== -1) {
+                wordHistoryBuffer.splice(bufferIdx, 1);
+            }
+
             toggleToastVisibility(true);
             
-            // To roll back, we instruct spreadsheet system to write previous values
-            // By passing a negative score payload signal, the script could adapt, 
-            // but the easiest robust solution is tracking it locally and overwriting 
-            // the counter safely by transmitting the accurate historic target values.
             fetch(WRITE_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -555,22 +569,20 @@
                     word: card.chinese,
                     type: card.type,
                     score: logEntry.previousScore,
-                    rollbackDecrement: true // Flag passed to override native incremental logic blocks
+                    rollbackDecrement: true
                 })
             }).then(() => toggleToastVisibility(false))
               .catch(() => toggleToastVisibility(false));
 
-            // Restore accurate state attributes into local memory fields
             card.score = logEntry.previousScore;
             card.count = logEntry.previousCount;
             card.lastTime = logEntry.previousLastTime;
 
-            // Inject object reference structures back onto front sequence arrays
             if (logEntry.wasInQueue) {
-                activeQueue.unshift(card);
+                // Re-insert exact index parameters safely
+                activeQueue.splice(logEntry.queuePosition, 0, card);
             }
 
-            // Retract overstudy triggers if an active element loop is restored
             if(activeQueue.length > 0) {
                 isOverstudyMode = false;
             }
