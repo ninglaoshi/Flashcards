@@ -106,6 +106,11 @@
             margin-bottom: 12px;
             padding: 0 4px;
         }
+        .header-left-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
         .counter-pill {
             background: var(--panel-bg);
             padding: 6px 14px;
@@ -114,7 +119,7 @@
             color: var(--text-muted);
             font-weight: 500;
         }
-        .btn-undo {
+        .btn-nav-control {
             background: transparent;
             border: 1px solid rgba(255,255,255,0.15);
             color: var(--text-muted);
@@ -126,7 +131,7 @@
             align-items: center;
             gap: 4px;
         }
-        .btn-undo:active { background: rgba(255,255,255,0.05); }
+        .btn-nav-control:active { background: rgba(255,255,255,0.05); }
 
         .flashcard-container {
             width: 100%;
@@ -222,7 +227,7 @@
         .grading-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
+            gap: 6px;
             width: 100%;
         }
 
@@ -230,7 +235,7 @@
             border: none;
             color: white;
             height: 75px; 
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             font-weight: 700;
             border-radius: 18px;
             cursor: pointer;
@@ -241,9 +246,10 @@
             gap: 4px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             transition: transform 0.1s;
+            padding: 4px;
         }
         .grad-btn:active { transform: scale(0.92); }
-        .grad-btn span { font-size: 1.2rem; }
+        .grad-btn span { font-size: 1.1rem; }
         
         .b1 { background: var(--btn-1); }
         .b2 { background: var(--btn-2); }
@@ -296,9 +302,9 @@
 
         <div class="mastery-panel">
             <div class="mastery-title">Knowledge Breakdown</div>
-            <div class="mastery-row"><span>🔥 Mastered (Lv 5):</span><span id="m-lv5">0</span></div>
-            <div class="mastery-row"><span>⚡ Reviewing (Lv 2-4):</span><span id="m-mid">0</span></div>
-            <div class="mastery-row"><span>⚠️ New/Struggling:</span><span id="m-lv1">0</span></div>
+            <div class="mastery-row"><span>🔥 Mastered (Avg ≥4.5):</span><span id="m-lv5">0</span></div>
+            <div class="mastery-row"><span>⚡ Reviewing (Avg 2.5-4.4):</span><span id="m-mid">0</span></div>
+            <div class="mastery-row"><span>⚠️ Struggles (Avg &lt;2.5):</span><span id="m-lv1">0</span></div>
         </div>
 
         <button class="btn-start" id="action-btn" onclick="startSession()">Start Session</button>
@@ -306,9 +312,14 @@
 
     <div id="study-space" class="workspace" style="display: none;">
         <div class="workspace-header">
-            <button class="btn-undo" id="undo-element" onclick="triggerUndo()" style="visibility: hidden;">
-                <span>↩</span> Undo
-            </button>
+            <div class="header-left-actions">
+                <button class="btn-nav-control" id="home-element" onclick="exitToDashboard()">
+                    <span>🏠</span> Home
+                </button>
+                <button class="btn-nav-control" id="undo-element" onclick="triggerUndo()" style="visibility: hidden;">
+                    <span>↩</span> Undo
+                </button>
+            </div>
             <div class="counter-pill" id="progress-counter">Loading cards...</div>
         </div>
 
@@ -334,10 +345,10 @@
             <div id="tap-hint" class="hint-banner">Tap to reveal answer</div>
             <div id="grade-controls" class="grading-grid" style="display: none;">
                 <button class="grad-btn b1" onclick="submitPerformanceRating(1)"><span>❌</span>No Clue</button>
-                <button class="grad-btn b2" onclick="submitPerformanceRating(2)"><span>⏳</span>Struggled</button>
-                <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Hard</button>
-                <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Good</button>
-                <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>Instant</button>
+                <button class="grad-btn b2" onclick="submitPerformanceRating(2)"><span>⏳</span>Incorrect</button>
+                <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Guessed</button>
+                <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Had to Think</button>
+                <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it</button>
             </div>
         </div>
     </div>
@@ -352,20 +363,33 @@
         let wordHistoryBuffer = []; 
         let isFlipped = false;
         let isOverstudyMode = false;
+        let lastIncomingRatingDelta = 0; // Tracks the last raw button score for structural rollback execution
 
         document.getElementById('dash-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
-        fetch(READ_URL)
-            .then(res => res.text())
-            .then(csvText => {
-                parseSheetDatabase(csvText);
-                compileDashboardMetrics();
-                document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-            })
-            .catch(err => {
-                document.getElementById('loading-screen').innerText = "Connection failed. Check permissions.";
-            });
+        function initializeAppSync() {
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('study-space').style.display = 'none';
+            document.getElementById('loading-screen').style.display = 'block';
+            document.getElementById('loading-screen').innerText = "Syncing Master Data...";
+            
+            masterDeck = []; // Flush old local reference mappings
+            
+            fetch(READ_URL)
+                .then(res => res.text())
+                .then(csvText => {
+                    parseSheetDatabase(csvText);
+                    compileDashboardMetrics();
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                })
+                .catch(err => {
+                    document.getElementById('loading-screen').innerText = "Connection failed. Check permissions.";
+                });
+        }
+
+        // Run Init App
+        initializeAppSync();
 
         function parseSheetDatabase(text) {
             const lines = text.split('\n');
@@ -400,9 +424,11 @@
             activeQueue = [];
 
             masterDeck.forEach(card => {
+                let averageScore = card.count > 0 ? (card.score / card.count) : 0;
+
                 if (card.count === 0) unviewedCount++;
-                else if (card.score === 5) lv5++;
-                else if (card.score > 1) mid++;
+                else if (averageScore >= 4.5) lv5++;
+                else if (averageScore >= 2.5) mid++;
                 else lv1++;
 
                 if (card.count === 0) {
@@ -410,24 +436,26 @@
                     activeQueue.push(card);
                     reviewsDue++;
                 } else {
-                    // NEW MORE RELAXED SRS MATURE TIMING MATRIX
-                    let intervalDays = 0;
-                    if (card.score === 1) intervalDays = 0.003; // Immediate review
-                    else if (card.score === 2) intervalDays = 1;     // 1 Day spacing
-                    else if (card.score === 3) intervalDays = 4;     // 4 Days spacing
-                    else if (card.score === 4) intervalDays = 10;    // 10 Days spacing
-                    else if (card.score === 5) intervalDays = 24;    // 24 Days spacing
+                    // Extract the theoretical last interval rating delta by calculating total delta trend or default to baseline
+                    // Since scores are now cumulative, we calculate intervals on the historical average score or last simulated scale
+                    let computedIntervalDays = 0;
+                    let roundedPerformanceLevel = Math.round(averageScore);
+
+                    if (roundedPerformanceLevel <= 2) computedIntervalDays = 0.003; // Immediate review loop bounds
+                    else if (roundedPerformanceLevel === 3) computedIntervalDays = 2; // Spacing logic map
+                    else if (roundedPerformanceLevel === 4) computedIntervalDays = 7;
+                    else computedIntervalDays = 18; // Mastered intervals extended tracking 
 
                     const daysElapsed = (now - card.lastTime) / (1000 * 60 * 60 * 24);
                     const minutesElapsed = daysElapsed * 24 * 60;
 
-                    // CONDITIONAL 5-MINUTE LOCKOUT ONLY IF RECENT MASTERED CHOSEN
-                    if (card.score === 5 && minutesElapsed < 5) {
-                        return; // Completely skipped from the active review queue
+                    // 5-minute lockout safety shield for highly active cards
+                    if (averageScore >= 4.5 && minutesElapsed < 5) {
+                        return;
                     }
 
-                    if (daysElapsed >= intervalDays) {
-                        card.urgency = daysElapsed / (intervalDays || 0.003);
+                    if (daysElapsed >= computedIntervalDays) {
+                        card.urgency = daysElapsed / (computedIntervalDays || 0.003);
                         activeQueue.push(card);
                         if (card.score > 0) reviewsDue++;
                     }
@@ -444,7 +472,7 @@
 
             const actionBtn = document.getElementById('action-btn');
             if (activeQueue.length === 0) {
-                actionBtn.innerText = "Review Stack Empty: Free Play";
+                actionBtn.innerText = "Review Stack Empty: Study Mode";
                 actionBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
             } else {
                 actionBtn.innerText = "Start Session";
@@ -459,11 +487,14 @@
             renderNextCardInstance();
         }
 
+        function exitToDashboard() {
+            // Safely return home, flushing temporary review view arrays and pulling clean data from base sheets
+            initializeAppSync();
+        }
+
         function renderNextCardInstance() {
             if (activeQueue.length === 0 && !isOverstudyMode) {
-                document.getElementById('study-space').style.display = 'none';
-                compileDashboardMetrics();
-                document.getElementById('dashboard').style.display = 'block';
+                exitToDashboard();
                 return;
             }
 
@@ -471,7 +502,12 @@
             let selectedQueueIndex = 0;
 
             if (isOverstudyMode) {
-                masterDeck.sort((a,b) => (a.score || 0) - (b.score || 0));
+                // Sort by total lifetime score ascending, then by view count to break ties fairly across large databases
+                masterDeck.sort((a,b) => {
+                    if (a.score !== b.score) return a.score - b.score;
+                    return (a.count || 0) - (b.count || 0);
+                });
+                
                 for (let i = 0; i < masterDeck.length; i++) {
                     if (!wordHistoryBuffer.includes(masterDeck[i].chinese)) {
                         card = masterDeck[i];
@@ -479,7 +515,7 @@
                     }
                 }
                 if (!card) card = masterDeck[0];
-                document.getElementById('progress-counter').innerText = "Free Play Mode";
+                document.getElementById('progress-counter').innerText = "Study Mode";
             } else {
                 for (let i = 0; i < activeQueue.length; i++) {
                     if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
@@ -552,10 +588,13 @@
             document.getElementById('grade-controls').style.display = 'grid';
         }
 
-        function submitPerformanceRating(score) {
+        function submitPerformanceRating(scoreDelta) {
             const card = window.activeCard;
+            lastIncomingRatingDelta = scoreDelta; // Maintain memory register context for undo rollback validation
+            
             historicalReviewStack.push({
                 cardObject: card,
+                ratingDeltaApplied: scoreDelta,
                 previousScore: card.score,
                 previousCount: card.count,
                 previousLastTime: card.lastTime,
@@ -567,11 +606,12 @@
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
             if (!isOverstudyMode) activeQueue.splice(window.currentActiveIndexInQueue, 1);
 
-            card.score = score;
+            // Mutate data parameters using unbounded cumulative architecture rules
+            card.score += scoreDelta;
             card.count += 1;
             card.lastTime = new Date();
 
-            transmitPayloadToCloud(card.chinese, card.type, score);
+            transmitPayloadToCloud(card.chinese, card.type, scoreDelta);
             renderNextCardInstance();
         }
 
@@ -587,10 +627,19 @@
             fetch(WRITE_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ word: card.chinese, type: card.type, score: logEntry.previousScore, rollbackDecrement: true })
+                body: JSON.stringify({ 
+                    word: card.chinese, 
+                    type: card.type, 
+                    score: logEntry.ratingDeltaApplied, // Tells sheets script exactly how much points to pull off 
+                    rollbackDecrement: true,
+                    previousLastTime: logEntry.previousLastTime ? logEntry.previousLastTime.toISOString() : ""
+                })
             }).then(() => toggleToastVisibility(false)).catch(() => toggleToastVisibility(false));
 
-            card.score = logEntry.previousScore; card.count = logEntry.previousCount; card.lastTime = logEntry.previousLastTime;
+            card.score = logEntry.previousScore; 
+            card.count = logEntry.previousCount; 
+            card.lastTime = logEntry.previousLastTime;
+            
             if (logEntry.wasInQueue) activeQueue.splice(logEntry.queuePosition, 0, card);
             if(activeQueue.length > 0) isOverstudyMode = false;
             renderNextCardInstance();
