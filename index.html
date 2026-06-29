@@ -14,7 +14,7 @@
             
             --front-cn-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             --front-en-bg: linear-gradient(135deg, #1e2a38 0%, #0d1e2d 100%);
-            --back-card-bg: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+            --back-card-bg: #111827;
             
             --btn-1: #ef4444;
             --btn-2: #f97316;
@@ -133,46 +133,61 @@
         }
         .btn-nav-control:active { background: rgba(255,255,255,0.05); }
 
+        /* REVEAL SLIDE VIEWPORT PANEL */
         .flashcard-container {
             width: 100%;
             height: 420px; 
-            perspective: 1000px;
             position: relative;
             margin-bottom: 20px;
-        }
-
-        .flashcard {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            transform-style: preserve-3d;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            cursor: pointer;
-        }
-        .flashcard.flipped { transform: rotateY(180deg); }
-
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 30px;
-            box-sizing: border-box;
+            background: var(--back-card-bg);
             border-radius: 32px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-            text-align: center;
             border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
+            cursor: pointer;
         }
 
-        .card-front.cn-mode { background: var(--front-cn-bg); }
-        .card-front.en-mode { background: var(--front-en-bg); }
-        .card-back {
-            background: var(--back-card-bg);
-            transform: rotateY(180deg);
+        /* CARD CONTENT LAYOUT */
+        .slide-pane {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #prompt-pane {
+            z-index: 2;
+            justify-content: center;
+            align-items: center;
+        }
+        #prompt-pane.cn-mode { background: var(--front-cn-bg); }
+        #prompt-pane.en-mode { background: var(--front-en-bg); }
+
+        /* When answer is revealed, prompt slides to bottom 30% area and drops text size slightly */
+        #prompt-pane.revealed-state {
+            height: 35%;
+            top: 65%;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding: 15px;
+        }
+
+        #answer-pane {
+            z-index: 1;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(-20px);
+            height: 65%;
+            top: 0;
+        }
+        #answer-pane.revealed-state {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .tag-pill {
@@ -184,12 +199,12 @@
             border-radius: 10px;
             margin-bottom: auto;
             background: rgba(255,255,255,0.05);
+            width: fit-content;
         }
         .cn-mode .tag-pill { color: var(--accent-primary); }
         .en-mode .tag-pill { color: var(--btn-5); }
-        .card-back .tag-pill { color: var(--text-muted); }
+        #answer-pane .tag-pill { color: var(--text-muted); margin-bottom: 20px;}
 
-        /* CONTENT WRAPPER */
         .content-body {
             flex: 1;
             display: flex;
@@ -204,6 +219,10 @@
             font-weight: 700; 
             line-height: 1.1;
             word-break: break-word; 
+            transition: font-size 0.3s;
+        }
+        #prompt-pane.revealed-state .main-text {
+            font-size: 1.8rem !important; /* Forces shrinkage during review mapping */
         }
         
         .back-main { 
@@ -222,7 +241,7 @@
 
         /* CONTROLS */
         .controls-wrapper { width: 100%; min-height: 100px; }
-        .hint-banner { text-align: center; color: var(--text-muted); font-size: 0.9rem; animation: pulse 2s infinite; padding: 15px; }
+        .hint-banner { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 15px; margin-top: 10px; }
         
         .grading-grid {
             display: grid;
@@ -269,17 +288,19 @@
             display: none;
             z-index: 999;
         }
-
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 0.8; }
-            100% { opacity: 0.4; }
+        #queue-badge {
+            background: #f97316;
+            margin-left: 6px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="toast">Updating Cloud...</div>
+    <div id="toast">Updating Cloud...<span id="queue-badge">0</span></div>
 
     <div id="loading-screen" style="color: var(--accent-primary); font-weight: 600;">Syncing Master Data...</div>
 
@@ -323,26 +344,24 @@
             <div class="counter-pill" id="progress-counter">Loading cards...</div>
         </div>
 
-        <div class="flashcard-container">
-            <div class="flashcard" id="card-node" onclick="executeFlip()">
-                <div class="card-face card-front" id="card-front-face">
-                    <div class="tag-pill" id="front-pill-tag">Prompt</div>
-                    <div class="content-body">
-                        <div class="main-text" id="front-display-text">...</div>
-                    </div>
+        <div class="flashcard-container" id="deck-viewport" onclick="executeRevealSlide()">
+            <div class="slide-pane" id="prompt-pane">
+                <div class="tag-pill" id="front-pill-tag">Prompt</div>
+                <div class="content-body">
+                    <div class="main-text" id="front-display-text">...</div>
                 </div>
-                <div class="card-face card-back">
-                    <div class="tag-pill">Meaning & Pinyin</div>
-                    <div class="content-body">
-                        <div class="back-main" id="back-display-main">...</div>
-                        <div class="back-sub" id="back-display-sub">...</div>
-                    </div>
+            </div>
+            <div class="slide-pane" id="answer-pane">
+                <div class="tag-pill">Meaning & Pinyin</div>
+                <div class="content-body">
+                    <div class="back-main" id="back-display-main">...</div>
+                    <div class="back-sub" id="back-display-sub">...</div>
                 </div>
             </div>
         </div>
 
         <div class="controls-wrapper">
-            <div id="tap-hint" class="hint-banner">Tap to reveal answer</div>
+            <div id="tap-hint" class="hint-banner">Tap card to reveal answer</div>
             <div id="grade-controls" class="grading-grid" style="display: none;">
                 <button class="grad-btn b1" onclick="submitPerformanceRating(1)"><span>❌</span>No Clue</button>
                 <button class="grad-btn b2" onclick="submitPerformanceRating(2)"><span>⏳</span>Incorrect</button>
@@ -361,9 +380,12 @@
         let activeQueue = [];
         let historicalReviewStack = [];
         let wordHistoryBuffer = []; 
-        let isFlipped = false;
+        let isRevealed = false;
         let isOverstudyMode = false;
-        let lastIncomingRatingDelta = 0; // Tracks the last raw button score for structural rollback execution
+
+        // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
+        let networkQueue = [];
+        let isProcessingNetworkQueue = false;
 
         document.getElementById('dash-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -373,7 +395,7 @@
             document.getElementById('loading-screen').style.display = 'block';
             document.getElementById('loading-screen').innerText = "Syncing Master Data...";
             
-            masterDeck = []; // Flush old local reference mappings
+            masterDeck = []; 
             
             fetch(READ_URL)
                 .then(res => res.text())
@@ -388,34 +410,32 @@
                 });
         }
 
-        // Run Init App
         initializeAppSync();
 
         function parseSheetDatabase(text) {
-    const lines = text.split('\n');
-    for(let i = 1; i < lines.length; i++) {
-        if(!lines[i].trim()) continue;
-        const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
-        if(!cols[0]) continue;
+            const lines = text.split('\n');
+            for(let i = 1; i < lines.length; i++) {
+                if(!lines[i].trim()) continue;
+                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+                if(!cols[0]) continue;
 
-        const chinese = cols[0];
-        const english = cols[1] ? cols[1] : cols[3];
-        const pinyin = cols[2] ? cols[2] : cols[4];
+                const chinese = cols[0];
+                const english = cols[1] ? cols[1] : cols[3];
+                const pinyin = cols[2] ? cols[2] : cols[4];
 
-        // F=5 (C2E Score), G=6 (E2C Score), H=7 (C2E Count), I=8 (E2C Count), J=9 (C2E Time), K=10 (E2C Time)
-        // Fixed: Ensure empty columns or white spaces default safely to 0 instead of NaN
-        const c2eScore = cols[5] && !isNaN(cols[5]) ? parseInt(cols[5]) : 0;
-        const e2cScore = cols[6] && !isNaN(cols[6]) ? parseInt(cols[6]) : 0;
-        const c2eCount = cols[7] && !isNaN(cols[7]) ? parseInt(cols[7]) : 0;
-        const e2cCount = cols[8] && !isNaN(cols[8]) ? parseInt(cols[8]) : 0;
-        
-        const c2eTime = cols[9] && cols[9] !== "" ? new Date(cols[9]) : null;
-        const e2cTime = cols[10] && cols[10] !== "" ? new Date(cols[10]) : null;
+                // FIXED: Safe logic evaluation block prevents string fields converting to NaN
+                const c2eScore = cols[5] && !isNaN(cols[5]) ? parseInt(cols[5]) : 0;
+                const e2cScore = cols[6] && !isNaN(cols[6]) ? parseInt(cols[6]) : 0;
+                const c2eCount = cols[7] && !isNaN(cols[7]) ? parseInt(cols[7]) : 0;
+                const e2cCount = cols[8] && !isNaN(cols[8]) ? parseInt(cols[8]) : 0;
+                
+                const c2eTime = cols[9] && cols[9] !== "" ? new Date(cols[9]) : null;
+                const e2cTime = cols[10] && cols[10] !== "" ? new Date(cols[10]) : null;
 
-        masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
-        masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
-    }
-}
+                masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
+                masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
+            }
+        }
 
         function compileDashboardMetrics() {
             const now = new Date();
@@ -437,23 +457,18 @@
                     activeQueue.push(card);
                     reviewsDue++;
                 } else {
-                    // Extract the theoretical last interval rating delta by calculating total delta trend or default to baseline
-                    // Since scores are now cumulative, we calculate intervals on the historical average score or last simulated scale
                     let computedIntervalDays = 0;
                     let roundedPerformanceLevel = Math.round(averageScore);
 
-                    if (roundedPerformanceLevel <= 2) computedIntervalDays = 0.003; // Immediate review loop bounds
-                    else if (roundedPerformanceLevel === 3) computedIntervalDays = 2; // Spacing logic map
+                    if (roundedPerformanceLevel <= 2) computedIntervalDays = 0.003; 
+                    else if (roundedPerformanceLevel === 3) computedIntervalDays = 2; 
                     else if (roundedPerformanceLevel === 4) computedIntervalDays = 7;
-                    else computedIntervalDays = 18; // Mastered intervals extended tracking 
+                    else computedIntervalDays = 18; 
 
                     const daysElapsed = (now - card.lastTime) / (1000 * 60 * 60 * 24);
                     const minutesElapsed = daysElapsed * 24 * 60;
 
-                    // 5-minute lockout safety shield for highly active cards
-                    if (averageScore >= 4.5 && minutesElapsed < 5) {
-                        return;
-                    }
+                    if (averageScore >= 4.5 && minutesElapsed < 5) return;
 
                     if (daysElapsed >= computedIntervalDays) {
                         card.urgency = daysElapsed / (computedIntervalDays || 0.003);
@@ -473,7 +488,7 @@
 
             const actionBtn = document.getElementById('action-btn');
             if (activeQueue.length === 0) {
-                actionBtn.innerText = "Review Stack Empty: Study Mode";
+                actionBtn.innerText = "Study Mode";
                 actionBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
             } else {
                 actionBtn.innerText = "Start Session";
@@ -489,7 +504,6 @@
         }
 
         function exitToDashboard() {
-            // Safely return home, flushing temporary review view arrays and pulling clean data from base sheets
             initializeAppSync();
         }
 
@@ -503,7 +517,6 @@
             let selectedQueueIndex = 0;
 
             if (isOverstudyMode) {
-                // Sort by total lifetime score ascending, then by view count to break ties fairly across large databases
                 masterDeck.sort((a,b) => {
                     if (a.score !== b.score) return a.score - b.score;
                     return (a.count || 0) - (b.count || 0);
@@ -526,26 +539,27 @@
                     }
                 }
                 if (!card) { card = activeQueue[0]; selectedQueueIndex = 0; }
-                document.getElementById('progress-counter').innerText = `${activeQueue.length} items to review`;
+                document.getElementById('progress-counter').innerText = `${activeQueue.length} items left`;
             }
 
             window.activeCard = card;
             window.currentActiveIndexInQueue = selectedQueueIndex;
 
-            const cardNode = document.getElementById('card-node');
-            cardNode.classList.remove('flipped');
-            isFlipped = false;
+            // Reset Slide Animation Panes back to native states
+            document.getElementById('prompt-pane').classList.remove('revealed-state');
+            document.getElementById('answer-pane').classList.remove('revealed-state');
+            isRevealed = false;
 
             document.getElementById('tap-hint').style.display = 'block';
             document.getElementById('grade-controls').style.display = 'none';
             document.getElementById('undo-element').style.visibility = historicalReviewStack.length > 0 ? 'visible' : 'hidden';
 
-            const frontFace = document.getElementById('card-front-face');
+            const promptPane = document.getElementById('prompt-pane');
             const frontText = document.getElementById('front-display-text');
             const backText = document.getElementById('back-display-main');
 
             if (card.type === 'CN_TO_EN') {
-                frontFace.className = "card-face card-front cn-mode";
+                promptPane.className = "slide-pane cn-mode";
                 document.getElementById('front-pill-tag').innerText = "Recognition";
                 
                 const cnFrontLen = card.chinese.length;
@@ -562,7 +576,7 @@
                 
                 document.getElementById('back-display-sub').innerText = card.pinyin;
             } else {
-                frontFace.className = "card-face card-front en-mode";
+                promptPane.className = "slide-pane en-mode";
                 document.getElementById('front-pill-tag').innerText = "Production";
                 
                 const enFrontLen = card.english.length;
@@ -581,17 +595,17 @@
             }
         }
 
-        function executeFlip() {
-            if (isFlipped) return;
-            document.getElementById('card-node').classList.add('flipped');
-            isFlipped = true;
+        function executeRevealSlide() {
+            if (isRevealed) return;
+            document.getElementById('prompt-pane').classList.add('revealed-state');
+            document.getElementById('answer-pane').classList.add('revealed-state');
+            isRevealed = true;
             document.getElementById('tap-hint').style.display = 'none';
             document.getElementById('grade-controls').style.display = 'grid';
         }
 
         function submitPerformanceRating(scoreDelta) {
             const card = window.activeCard;
-            lastIncomingRatingDelta = scoreDelta; // Maintain memory register context for undo rollback validation
             
             historicalReviewStack.push({
                 cardObject: card,
@@ -607,12 +621,12 @@
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
             if (!isOverstudyMode) activeQueue.splice(window.currentActiveIndexInQueue, 1);
 
-            // Mutate data parameters using unbounded cumulative architecture rules
             card.score += scoreDelta;
             card.count += 1;
             card.lastTime = new Date();
 
-            transmitPayloadToCloud(card.chinese, card.type, scoreDelta);
+            // Queue up standard score transmission payload
+            enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
             renderNextCardInstance();
         }
 
@@ -624,18 +638,14 @@
             const bufferIdx = wordHistoryBuffer.lastIndexOf(card.chinese);
             if(bufferIdx !== -1) wordHistoryBuffer.splice(bufferIdx, 1);
 
-            toggleToastVisibility(true);
-            fetch(WRITE_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({ 
-                    word: card.chinese, 
-                    type: card.type, 
-                    score: logEntry.ratingDeltaApplied, // Tells sheets script exactly how much points to pull off 
-                    rollbackDecrement: true,
-                    previousLastTime: logEntry.previousLastTime ? logEntry.previousLastTime.toISOString() : ""
-                })
-            }).then(() => toggleToastVisibility(false)).catch(() => toggleToastVisibility(false));
+            // Queue up undo action execution payload
+            enqueueNetworkPayload({ 
+                word: card.chinese, 
+                type: card.type, 
+                score: logEntry.ratingDeltaApplied, 
+                rollbackDecrement: true,
+                previousLastTime: logEntry.previousLastTime ? logEntry.previousLastTime.toISOString() : ""
+            });
 
             card.score = logEntry.previousScore; 
             card.count = logEntry.previousCount; 
@@ -646,16 +656,52 @@
             renderNextCardInstance();
         }
 
-        function transmitPayloadToCloud(word, type, score) {
-            toggleToastVisibility(true);
+        // QUEUE MANAGER PIPELINE ENGINE
+        function enqueueNetworkPayload(payload) {
+            networkQueue.push(payload);
+            updateNetworkToastUI();
+            processNetworkPipeline();
+        }
+
+        function processNetworkPipeline() {
+            if (isProcessingNetworkQueue || networkQueue.length === 0) return;
+            isProcessingNetworkQueue = true;
+
+            const dynamicPayload = networkQueue[0];
+            updateNetworkToastUI();
+
             fetch(WRITE_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ word, type, score })
-            }).then(() => toggleToastVisibility(false)).catch(() => toggleToastVisibility(false));
+                body: JSON.stringify(dynamicPayload)
+            })
+            .then(() => {
+                networkQueue.shift(); // Remove completed element from line array safely
+                isProcessingNetworkQueue = false;
+                updateNetworkToastUI();
+                processNetworkPipeline(); // Auto trigger sequential loop call execution
+            })
+            .catch(() => {
+                // If a connection drop-off error spikes, wait 4 seconds and try this index payload again
+                setTimeout(() => {
+                    isProcessingNetworkQueue = false;
+                    processNetworkPipeline();
+                }, 4000);
+            });
         }
 
-        function toggleToastVisibility(show) { document.getElementById('toast').style.display = show ? 'block' : 'none'; }
+        function updateNetworkToastUI() {
+            const toastNode = document.getElementById('toast');
+            const badgeNode = document.getElementById('queue-badge');
+            
+            if (networkQueue.length === 0) {
+                toastNode.style.display = 'none';
+            } else {
+                toastNode.style.display = 'block';
+                badgeNode.style.display = networkQueue.length > 1 ? 'inline-block' : 'none';
+                badgeNode.innerText = networkQueue.length;
+            }
+        }
     </script>
 </body>
 </html>
