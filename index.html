@@ -392,29 +392,30 @@
         initializeAppSync();
 
         function parseSheetDatabase(text) {
-            const lines = text.split('\n');
-            for(let i = 1; i < lines.length; i++) {
-                if(!lines[i].trim()) continue;
-                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
-                if(!cols[0]) continue;
+    const lines = text.split('\n');
+    for(let i = 1; i < lines.length; i++) {
+        if(!lines[i].trim()) continue;
+        const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+        if(!cols[0]) continue;
 
-                const chinese = cols[0];
-                const english = cols[1] ? cols[1] : cols[3];
-                const pinyin = cols[2] ? cols[2] : cols[4];
+        const chinese = cols[0];
+        const english = cols[1] ? cols[1] : cols[3];
+        const pinyin = cols[2] ? cols[2] : cols[4];
 
-                // F=5 (C2E Score), G=6 (E2C Score), H=7 (C2E Count), I=8 (E2C Count), J=9 (C2E Time), K=10 (E2C Time)
-                const c2eScore = cols[5] ? parseInt(cols[5]) : 0;
-                const e2cScore = cols[6] ? parseInt(cols[6]) : 0;
-                const c2eCount = cols[7] ? parseInt(cols[7]) : 0;
-                const e2cCount = cols[8] ? parseInt(cols[8]) : 0;
-                
-                const c2eTime = cols[9] ? new Date(cols[9]) : null;
-                const e2cTime = cols[10] ? new Date(cols[10]) : null;
+        // F=5 (C2E Score), G=6 (E2C Score), H=7 (C2E Count), I=8 (E2C Count), J=9 (C2E Time), K=10 (E2C Time)
+        // Fixed: Ensure empty columns or white spaces default safely to 0 instead of NaN
+        const c2eScore = cols[5] && !isNaN(cols[5]) ? parseInt(cols[5]) : 0;
+        const e2cScore = cols[6] && !isNaN(cols[6]) ? parseInt(cols[6]) : 0;
+        const c2eCount = cols[7] && !isNaN(cols[7]) ? parseInt(cols[7]) : 0;
+        const e2cCount = cols[8] && !isNaN(cols[8]) ? parseInt(cols[8]) : 0;
+        
+        const c2eTime = cols[9] && cols[9] !== "" ? new Date(cols[9]) : null;
+        const e2cTime = cols[10] && cols[10] !== "" ? new Date(cols[10]) : null;
 
-                masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
-                masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
-            }
-        }
+        masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
+        masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
+    }
+}
 
         function compileDashboardMetrics() {
             const now = new Date();
