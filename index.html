@@ -103,7 +103,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             padding: 0 4px;
         }
         .header-left-actions {
@@ -113,30 +113,35 @@
         }
         .counter-pill {
             background: var(--panel-bg);
-            padding: 6px 14px;
+            padding: 8px 14px;
             border-radius: 20px;
             font-size: 0.8rem;
             color: var(--text-muted);
             font-weight: 500;
         }
+        
+        /* ENHANCED HOME BUTTON */
         .btn-nav-control {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.15);
-            color: var(--text-muted);
-            padding: 6px 12px;
+            background: #334155;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #f1f5f9;
+            padding: 8px 16px;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: background 0.15s, transform 0.1s;
         }
-        .btn-nav-control:active { background: rgba(255,255,255,0.05); }
+        .btn-nav-control:active { transform: scale(0.95); background: #475569; }
 
         /* REVEAL SLIDE VIEWPORT PANEL */
         .flashcard-container {
             width: 100%;
-            height: 420px; 
+            height: 460px; /* Expanded to utilize phone canvas space */
             position: relative;
             margin-bottom: 20px;
             background: var(--back-card-bg);
@@ -175,6 +180,7 @@
             border-top: 1px solid rgba(255,255,255,0.05);
             padding: 15px;
         }
+        #prompt-pane.revealed-state .tag-row { display: none; }
 
         #answer-pane {
             z-index: 1;
@@ -212,21 +218,22 @@
         .en-mode .tag-pill { color: var(--btn-5); }
         #answer-pane .tag-pill { color: var(--text-muted); margin-bottom: 20px;}
 
-        /* PINYIN CLUE ELEMENT STYLING */
+        /* ENHANCED PINYIN CLUE BUTTON */
         .clue-action-btn {
-            background: rgba(56, 189, 248, 0.15);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            color: var(--accent-primary);
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.65rem;
-            font-weight: 600;
+            background: #0284c7;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
             cursor: pointer;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
             transition: all 0.2s;
         }
-        .clue-action-btn:active { transform: scale(0.95); background: rgba(56, 189, 248, 0.3); }
+        .clue-action-btn:active { transform: scale(0.95); background: #0369a1; }
         
         .live-clue-banner {
             font-size: 1.1rem;
@@ -258,7 +265,8 @@
             transition: font-size 0.3s;
         }
         #prompt-pane.revealed-state .main-text {
-            font-size: 1.8rem !important;
+            font-size: 1.4rem !important;
+            line-height: 1.2;
         }
         
         .back-main { 
@@ -275,7 +283,6 @@
             font-weight: 400; 
             transition: color 0.4s ease;
         }
-        /* Clue activation highlight style expansion mapping */
         .back-sub.expanded-from-clue {
             color: var(--btn-3);
         }
@@ -389,7 +396,7 @@
             <div class="slide-pane" id="prompt-pane">
                 <div class="tag-row">
                     <div class="tag-pill" id="front-pill-tag">Prompt</div>
-                    <button class="clue-action-btn" id="clue-trigger" onclick="generatePinyinClue(event)" style="display: none;">Clue</button>
+                    <button class="clue-action-btn" id="clue-trigger" onclick="generatePinyinClue(event)" style="display: none;">Pinyin Clue</button>
                 </div>
                 <div class="content-body">
                     <div class="main-text" id="front-display-text">...</div>
@@ -501,7 +508,6 @@
             masterDeck.forEach(card => {
                 let averageScore = card.count > 0 ? (card.score / card.count) : 0;
 
-                // Scan timestamps to tally daily history load completions
                 if (card.lastTime && card.lastTime.toDateString() === todayString) {
                     studiedTodayCount++;
                 }
@@ -540,19 +546,20 @@
                 }
             });
 
-            // MINIMUM DAILY QUOTA (DYNAMIC FLOOR ENGINE)
-            // If user hasn't studied today and the natural queue layout falls below 30 entries...
             if (studiedTodayCount === 0 && activeQueue.length < 30 && masterDeck.length > 0) {
-                // Sort backup pool descending by proximity to deadline urgency factors
                 poolOfNotDueCards.sort((a, b) => b.urgency - a.urgency);
-                
-                // Backfill queue dynamically until structural milestone ceiling capacity is matched
                 while (activeQueue.length < 30 && poolOfNotDueCards.length > 0) {
                     activeQueue.push(poolOfNotDueCards.shift());
                 }
             }
 
-            activeQueue.sort((a, b) => b.urgency - a.urgency);
+            // EN_TO_CN PRODUCTION BIAS SORT MODIFIER
+            // Give EN_TO_CN elements an artificial urgency bump if urgency is otherwise tied
+            activeQueue.sort((a, b) => {
+                let scoreA = a.urgency + (a.type === 'EN_TO_CN' ? 0.01 : 0);
+                let scoreB = b.urgency + (b.type === 'EN_TO_CN' ? 0.01 : 0);
+                return scoreB - scoreA;
+            });
 
             document.getElementById('stat-due').innerText = naturalReviewsDue;
             document.getElementById('stat-new').innerText = unviewedCount;
@@ -562,7 +569,7 @@
 
             const actionBtn = document.getElementById('action-btn');
             if (activeQueue.length === 0) {
-                actionBtn.innerText = "Study Mode";
+                actionBtn.innerText = "Free Review";
                 actionBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
             } else {
                 actionBtn.innerText = "Start Session";
@@ -577,11 +584,9 @@
             renderNextCardInstance();
         }
 
-        // SYNC GATE TRIGGER ENTRYPOINT
         function exitToDashboard() {
             userWantsToExit = true;
             if (networkQueue.length > 0) {
-                // Intercept and hold screen context
                 document.getElementById('study-space').style.display = 'none';
                 document.getElementById('loading-screen').style.display = 'block';
                 updateSyncGateMessageUI();
@@ -609,8 +614,10 @@
             let selectedQueueIndex = 0;
 
             if (isOverstudyMode) {
+                // Keep Production First strategy intact during Free Review Mode by altering secondary sorts
                 masterDeck.sort((a,b) => {
                     if (a.score !== b.score) return a.score - b.score;
+                    if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
                     return (a.count || 0) - (b.count || 0);
                 });
                 
@@ -621,7 +628,7 @@
                     }
                 }
                 if (!card) card = masterDeck[0];
-                document.getElementById('progress-counter').innerText = "Study Mode";
+                document.getElementById('progress-counter').innerText = "Free Review";
             } else {
                 for (let i = 0; i < activeQueue.length; i++) {
                     if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
@@ -637,14 +644,12 @@
             window.activeCard = card;
             window.currentActiveIndexInQueue = selectedQueueIndex;
 
-            // Reset Card States
             document.getElementById('prompt-pane').classList.remove('revealed-state');
             document.getElementById('answer-pane').classList.remove('revealed-state');
             document.getElementById('back-display-sub').classList.remove('expanded-from-clue');
             isRevealed = false;
             clueWasActivated = false;
 
-            // Hide hint elements initially
             document.getElementById('clue-display-box').style.display = 'none';
             document.getElementById('clue-trigger').style.display = 'none';
 
@@ -668,8 +673,8 @@
                 
                 const enBackLen = card.english.length;
                 if (enBackLen > 90) backText.style.fontSize = "1.2rem";
-                else if (enBackLen > 50) backText.style.fontSize = "1.6rem";
-                else backText.style.fontSize = "2.2rem";
+                else if (enBackLen > 50) backText.style.fontSize = "1.5rem";
+                else backText.style.fontSize = "2.0rem";
                 backText.innerText = card.english;
                 
                 document.getElementById('back-display-sub').innerText = card.pinyin;
@@ -677,13 +682,13 @@
                 promptPane.className = "slide-pane en-mode";
                 document.getElementById('front-pill-tag').innerText = "Production";
                 
-                // Show clue button only for Production cards (EN to CN)
                 document.getElementById('clue-trigger').style.display = 'block';
                 
                 const enFrontLen = card.english.length;
-                if (enFrontLen > 90) frontText.style.fontSize = "1.3rem";
-                else if (enFrontLen > 50) frontText.style.fontSize = "1.8rem";
-                else frontText.style.fontSize = "2.8rem";
+                if (enFrontLen > 90) frontText.style.fontSize = "1.2rem";
+                else if (enFrontLen > 50) frontText.style.fontSize = "1.5rem";
+                else if (enFrontLen > 25) frontText.style.fontSize = "2.0rem";
+                else frontText.style.fontSize = "2.6rem";
                 frontText.innerText = card.english;
                 
                 const cnBackLen = card.chinese.length;
@@ -697,12 +702,10 @@
         }
 
         function generatePinyinClue(event) {
-            event.stopPropagation(); // Stop parent click event bubble from running executeRevealSlide prematurely
+            event.stopPropagation();
             if (clueWasActivated) return;
 
             const pinyinString = window.activeCard.pinyin;
-            
-            // Extract the first word/syllable safely or slice the initial 25% boundary string
             let computedClue = "";
             const firstSpaceIndex = pinyinString.indexOf(' ');
             
@@ -715,20 +718,23 @@
 
             document.getElementById('clue-text-string').innerText = `${computedClue}...`;
             document.getElementById('clue-display-box').style.display = 'block';
-            document.getElementById('clue-trigger').style.display = 'none'; // Hide button once consumed
+            document.getElementById('clue-trigger').style.display = 'none';
             clueWasActivated = true;
         }
 
         function executeRevealSlide() {
             if (isRevealed) return;
             
-            // Hide front side clue text element container to yield seamless expansion integration mapping
             document.getElementById('clue-display-box').style.display = 'none';
             document.getElementById('clue-trigger').style.display = 'none';
 
-            // Check if clue was active, if so apply temporary visual highlighting classes
             if (clueWasActivated) {
                 document.getElementById('back-display-sub').classList.add('expanded-from-clue');
+            }
+
+            const frontText = document.getElementById('front-display-text');
+            if (window.activeCard.type === 'EN_TO_CN' && window.activeCard.english.length > 60) {
+                frontText.style.setProperty('font-size', '1.05rem', 'important');
             }
 
             document.getElementById('prompt-pane').classList.add('revealed-state');
@@ -813,9 +819,8 @@
                 isProcessingNetworkQueue = false;
                 updateNetworkToastUI();
                 
-                // SYNC GATE EVALUATION POINT
                 if (userWantsToExit && networkQueue.length === 0) {
-                    initializeAppSync(); // Release block gate barrier safely
+                    initializeAppSync();
                 } else {
                     updateSyncGateMessageUI();
                     processNetworkPipeline();
