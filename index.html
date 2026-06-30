@@ -168,7 +168,7 @@
         #prompt-pane.cn-mode { background: var(--front-cn-bg); }
         #prompt-pane.en-mode { background: var(--front-en-bg); }
 
-        /* When answer is revealed, prompt slides to bottom 30% area and drops text size slightly */
+        /* When answer is revealed, prompt slides to bottom 35% area */
         #prompt-pane.revealed-state {
             height: 35%;
             top: 65%;
@@ -190,6 +190,14 @@
             transform: translateY(0);
         }
 
+        .tag-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: auto;
+        }
+
         .tag-pill {
             font-size: 0.7rem;
             font-weight: 700;
@@ -197,13 +205,41 @@
             text-transform: uppercase;
             padding: 5px 12px;
             border-radius: 10px;
-            margin-bottom: auto;
             background: rgba(255,255,255,0.05);
             width: fit-content;
         }
         .cn-mode .tag-pill { color: var(--accent-primary); }
         .en-mode .tag-pill { color: var(--btn-5); }
         #answer-pane .tag-pill { color: var(--text-muted); margin-bottom: 20px;}
+
+        /* PINYIN CLUE ELEMENT STYLING */
+        .clue-action-btn {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--accent-primary);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .clue-action-btn:active { transform: scale(0.95); background: rgba(56, 189, 248, 0.3); }
+        
+        .live-clue-banner {
+            font-size: 1.1rem;
+            color: var(--btn-3);
+            font-weight: 600;
+            margin-top: 12px;
+            letter-spacing: 1.5px;
+            background: rgba(234, 179, 8, 0.08);
+            padding: 6px 16px;
+            border-radius: 10px;
+            border: 1px dashed rgba(234, 179, 8, 0.2);
+            display: inline-block;
+        }
 
         .content-body {
             flex: 1;
@@ -222,7 +258,7 @@
             transition: font-size 0.3s;
         }
         #prompt-pane.revealed-state .main-text {
-            font-size: 1.8rem !important; /* Forces shrinkage during review mapping */
+            font-size: 1.8rem !important;
         }
         
         .back-main { 
@@ -237,6 +273,11 @@
             font-size: 1.5rem; 
             color: var(--accent-primary); 
             font-weight: 400; 
+            transition: color 0.4s ease;
+        }
+        /* Clue activation highlight style expansion mapping */
+        .back-sub.expanded-from-clue {
+            color: var(--btn-3);
         }
 
         /* CONTROLS */
@@ -302,7 +343,7 @@
 
     <div id="toast">Updating Cloud...<span id="queue-badge">0</span></div>
 
-    <div id="loading-screen" style="color: var(--accent-primary); font-weight: 600;">Syncing Master Data...</div>
+    <div id="loading-screen" style="color: var(--accent-primary); font-weight: 600; text-align: center; padding: 20px;">Syncing Master Data...</div>
 
     <div id="dashboard" class="dashboard-container" style="display: none;">
         <div class="dash-header">
@@ -346,9 +387,15 @@
 
         <div class="flashcard-container" id="deck-viewport" onclick="executeRevealSlide()">
             <div class="slide-pane" id="prompt-pane">
-                <div class="tag-pill" id="front-pill-tag">Prompt</div>
+                <div class="tag-row">
+                    <div class="tag-pill" id="front-pill-tag">Prompt</div>
+                    <button class="clue-action-btn" id="clue-trigger" onclick="generatePinyinClue(event)" style="display: none;">Clue</button>
+                </div>
                 <div class="content-body">
                     <div class="main-text" id="front-display-text">...</div>
+                    <div id="clue-display-box" style="display: none;">
+                        <div class="live-clue-banner" id="clue-text-string"></div>
+                    </div>
                 </div>
             </div>
             <div class="slide-pane" id="answer-pane">
@@ -382,14 +429,17 @@
         let wordHistoryBuffer = []; 
         let isRevealed = false;
         let isOverstudyMode = false;
+        let clueWasActivated = false;
 
         // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
         let networkQueue = [];
         let isProcessingNetworkQueue = false;
+        let userWantsToExit = false;
 
         document.getElementById('dash-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
         function initializeAppSync() {
+            userWantsToExit = false;
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('study-space').style.display = 'none';
             document.getElementById('loading-screen').style.display = 'block';
@@ -423,7 +473,6 @@
                 const english = cols[1] ? cols[1] : cols[3];
                 const pinyin = cols[2] ? cols[2] : cols[4];
 
-                // FIXED: Safe logic evaluation block prevents string fields converting to NaN
                 const c2eScore = cols[5] && !isNaN(cols[5]) ? parseInt(cols[5]) : 0;
                 const e2cScore = cols[6] && !isNaN(cols[6]) ? parseInt(cols[6]) : 0;
                 const c2eCount = cols[7] && !isNaN(cols[7]) ? parseInt(cols[7]) : 0;
@@ -439,13 +488,23 @@
 
         function compileDashboardMetrics() {
             const now = new Date();
-            let reviewsDue = 0;
+            let naturalReviewsDue = 0;
             let unviewedCount = 0;
             let lv5 = 0, mid = 0, lv1 = 0;
+            
             activeQueue = [];
+            let poolOfNotDueCards = [];
+            let studiedTodayCount = 0;
+
+            const todayString = now.toDateString();
 
             masterDeck.forEach(card => {
                 let averageScore = card.count > 0 ? (card.score / card.count) : 0;
+
+                // Scan timestamps to tally daily history load completions
+                if (card.lastTime && card.lastTime.toDateString() === todayString) {
+                    studiedTodayCount++;
+                }
 
                 if (card.count === 0) unviewedCount++;
                 else if (averageScore >= 4.5) lv5++;
@@ -455,7 +514,7 @@
                 if (card.count === 0) {
                     card.urgency = 100;
                     activeQueue.push(card);
-                    reviewsDue++;
+                    naturalReviewsDue++;
                 } else {
                     let computedIntervalDays = 0;
                     let roundedPerformanceLevel = Math.round(averageScore);
@@ -470,17 +529,32 @@
 
                     if (averageScore >= 4.5 && minutesElapsed < 5) return;
 
+                    card.urgency = daysElapsed / (computedIntervalDays || 0.003);
+
                     if (daysElapsed >= computedIntervalDays) {
-                        card.urgency = daysElapsed / (computedIntervalDays || 0.003);
                         activeQueue.push(card);
-                        if (card.score > 0) reviewsDue++;
+                        if (card.score > 0) naturalReviewsDue++;
+                    } else {
+                        poolOfNotDueCards.push(card);
                     }
                 }
             });
 
+            // MINIMUM DAILY QUOTA (DYNAMIC FLOOR ENGINE)
+            // If user hasn't studied today and the natural queue layout falls below 30 entries...
+            if (studiedTodayCount === 0 && activeQueue.length < 30 && masterDeck.length > 0) {
+                // Sort backup pool descending by proximity to deadline urgency factors
+                poolOfNotDueCards.sort((a, b) => b.urgency - a.urgency);
+                
+                // Backfill queue dynamically until structural milestone ceiling capacity is matched
+                while (activeQueue.length < 30 && poolOfNotDueCards.length > 0) {
+                    activeQueue.push(poolOfNotDueCards.shift());
+                }
+            }
+
             activeQueue.sort((a, b) => b.urgency - a.urgency);
 
-            document.getElementById('stat-due').innerText = reviewsDue;
+            document.getElementById('stat-due').innerText = naturalReviewsDue;
             document.getElementById('stat-new').innerText = unviewedCount;
             document.getElementById('m-lv5').innerText = lv5;
             document.getElementById('m-mid').innerText = mid;
@@ -503,8 +577,26 @@
             renderNextCardInstance();
         }
 
+        // SYNC GATE TRIGGER ENTRYPOINT
         function exitToDashboard() {
-            initializeAppSync();
+            userWantsToExit = true;
+            if (networkQueue.length > 0) {
+                // Intercept and hold screen context
+                document.getElementById('study-space').style.display = 'none';
+                document.getElementById('loading-screen').style.display = 'block';
+                updateSyncGateMessageUI();
+            } else {
+                initializeAppSync();
+            }
+        }
+
+        function updateSyncGateMessageUI() {
+            if (userWantsToExit && networkQueue.length > 0) {
+                document.getElementById('loading-screen').innerHTML = `
+                    <div style="font-size:1.1rem; margin-bottom:8px;">Wrapping up your session...</div>
+                    <div style="font-size:0.85rem; color:var(--text-muted);">Syncing final reviews with the cloud (Remaining: ${networkQueue.length})</div>
+                `;
+            }
         }
 
         function renderNextCardInstance() {
@@ -545,10 +637,16 @@
             window.activeCard = card;
             window.currentActiveIndexInQueue = selectedQueueIndex;
 
-            // Reset Slide Animation Panes back to native states
+            // Reset Card States
             document.getElementById('prompt-pane').classList.remove('revealed-state');
             document.getElementById('answer-pane').classList.remove('revealed-state');
+            document.getElementById('back-display-sub').classList.remove('expanded-from-clue');
             isRevealed = false;
+            clueWasActivated = false;
+
+            // Hide hint elements initially
+            document.getElementById('clue-display-box').style.display = 'none';
+            document.getElementById('clue-trigger').style.display = 'none';
 
             document.getElementById('tap-hint').style.display = 'block';
             document.getElementById('grade-controls').style.display = 'none';
@@ -579,6 +677,9 @@
                 promptPane.className = "slide-pane en-mode";
                 document.getElementById('front-pill-tag').innerText = "Production";
                 
+                // Show clue button only for Production cards (EN to CN)
+                document.getElementById('clue-trigger').style.display = 'block';
+                
                 const enFrontLen = card.english.length;
                 if (enFrontLen > 90) frontText.style.fontSize = "1.3rem";
                 else if (enFrontLen > 50) frontText.style.fontSize = "1.8rem";
@@ -595,10 +696,44 @@
             }
         }
 
+        function generatePinyinClue(event) {
+            event.stopPropagation(); // Stop parent click event bubble from running executeRevealSlide prematurely
+            if (clueWasActivated) return;
+
+            const pinyinString = window.activeCard.pinyin;
+            
+            // Extract the first word/syllable safely or slice the initial 25% boundary string
+            let computedClue = "";
+            const firstSpaceIndex = pinyinString.indexOf(' ');
+            
+            if (firstSpaceIndex !== -1) {
+                computedClue = pinyinString.substring(0, firstSpaceIndex);
+            } else {
+                const sliceBoundary = Math.max(2, Math.ceil(pinyinString.length * 0.3));
+                computedClue = pinyinString.substring(0, sliceBoundary);
+            }
+
+            document.getElementById('clue-text-string').innerText = `${computedClue}...`;
+            document.getElementById('clue-display-box').style.display = 'block';
+            document.getElementById('clue-trigger').style.display = 'none'; // Hide button once consumed
+            clueWasActivated = true;
+        }
+
         function executeRevealSlide() {
             if (isRevealed) return;
+            
+            // Hide front side clue text element container to yield seamless expansion integration mapping
+            document.getElementById('clue-display-box').style.display = 'none';
+            document.getElementById('clue-trigger').style.display = 'none';
+
+            // Check if clue was active, if so apply temporary visual highlighting classes
+            if (clueWasActivated) {
+                document.getElementById('back-display-sub').classList.add('expanded-from-clue');
+            }
+
             document.getElementById('prompt-pane').classList.add('revealed-state');
             document.getElementById('answer-pane').classList.add('revealed-state');
+            
             isRevealed = true;
             document.getElementById('tap-hint').style.display = 'none';
             document.getElementById('grade-controls').style.display = 'grid';
@@ -625,7 +760,6 @@
             card.count += 1;
             card.lastTime = new Date();
 
-            // Queue up standard score transmission payload
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
             renderNextCardInstance();
         }
@@ -638,7 +772,6 @@
             const bufferIdx = wordHistoryBuffer.lastIndexOf(card.chinese);
             if(bufferIdx !== -1) wordHistoryBuffer.splice(bufferIdx, 1);
 
-            // Queue up undo action execution payload
             enqueueNetworkPayload({ 
                 word: card.chinese, 
                 type: card.type, 
@@ -656,10 +789,10 @@
             renderNextCardInstance();
         }
 
-        // QUEUE MANAGER PIPELINE ENGINE
         function enqueueNetworkPayload(payload) {
             networkQueue.push(payload);
             updateNetworkToastUI();
+            updateSyncGateMessageUI();
             processNetworkPipeline();
         }
 
@@ -676,13 +809,19 @@
                 body: JSON.stringify(dynamicPayload)
             })
             .then(() => {
-                networkQueue.shift(); // Remove completed element from line array safely
+                networkQueue.shift();
                 isProcessingNetworkQueue = false;
                 updateNetworkToastUI();
-                processNetworkPipeline(); // Auto trigger sequential loop call execution
+                
+                // SYNC GATE EVALUATION POINT
+                if (userWantsToExit && networkQueue.length === 0) {
+                    initializeAppSync(); // Release block gate barrier safely
+                } else {
+                    updateSyncGateMessageUI();
+                    processNetworkPipeline();
+                }
             })
             .catch(() => {
-                // If a connection drop-off error spikes, wait 4 seconds and try this index payload again
                 setTimeout(() => {
                     isProcessingNetworkQueue = false;
                     processNetworkPipeline();
@@ -694,7 +833,7 @@
             const toastNode = document.getElementById('toast');
             const badgeNode = document.getElementById('queue-badge');
             
-            if (networkQueue.length === 0) {
+            if (networkQueue.length === 0 || userWantsToExit) {
                 toastNode.style.display = 'none';
             } else {
                 toastNode.style.display = 'block';
