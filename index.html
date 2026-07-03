@@ -24,7 +24,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Text\", \"Helvetica Neue\", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
             margin: 0;
@@ -141,7 +141,7 @@
             color: #64748b;
             box-shadow: none;
             cursor: not-allowed;
-            display: none; /* Hide if no reviews are available */
+            display: none;
         }
 
         .btn-secondary {
@@ -155,10 +155,6 @@
             cursor: pointer;
             text-align: center;
             transition: background-color 0.2s;
-        }
-
-        .btn-secondary:white {
-            background-color: rgba(255, 255, 255, 0.05);
         }
 
         .info-panel {
@@ -206,14 +202,14 @@
             line-height: 1.4;
         }
 
-        /* SCREEN SYNC GATE */
+        /* INITIAL SYNC GATE LOADING SCREEN */
         .sync-gate-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 40px 20px;
+            padding: 60px 20px;
             margin-top: 40px;
         }
 
@@ -503,7 +499,17 @@
             <div id="header-date" class="date-display"></div>
         </header>
 
-        <div id="screen-hub" class="screen active">
+        <div id="screen-sync-gate" class="screen active">
+            <div class="sync-gate-container">
+                <div class="spinner"></div>
+                <h3 style="margin: 0 0 8px 0; font-size: 1.2rem;">Synchronizing Database</h3>
+                <p id="sync-gate-msg" style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">
+                    Pulling live vocabulary manifests from your Google Sheet...
+                </p>
+            </div>
+        </div>
+
+        <div id="screen-hub" class="screen">
             <div class="hero-status-card">
                 <div id="hero-count-badge" class="hero-badge">0</div>
                 <h2 id="hero-card-title" class="hero-title">Cards Due</h2>
@@ -540,16 +546,6 @@
                 <div id="stat-unstudied-text" class="new-words-text">
                     Checking unstudied card records...
                 </div>
-            </div>
-        </div>
-
-        <div id="screen-sync-gate" class="screen">
-            <div class="sync-gate-container">
-                <div class="spinner"></div>
-                <h3 style="margin: 0 0 8px 0; font-size: 1.2rem;">Synchronizing Database</h3>
-                <p id="sync-gate-msg" style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">
-                    Pulling live vocabulary manifests from your Google Sheet...
-                </p>
             </div>
         </div>
 
@@ -634,8 +630,8 @@
         let historicalReviewStack = [];
         let wordHistoryBuffer = [];
         
-        let window.activeCard = null;
-        let window.currentActiveIndexInQueue = -1;
+        window.activeCard = null; // FIXED SYNTAX: Variable global attachment
+        window.currentActiveIndexInQueue = -1;
         let isOverstudyMode = false;
         
         // BACKGROUND PERSISTENT SYNC QUEUE SYSTEM
@@ -688,14 +684,14 @@
         // CORE PULL PIPELINE
         function initializeAppSync() {
             userWantsToExit = false;
-            switchScreenContext('screen-sync-gate');
+            switchScreenContext('screen-sync-gate'); // FIXED FLOW: Explicitly launch splash gate first
             document.getElementById('sync-gate-msg').innerText = "Downloading target parameters from engine database...";
 
             fetch(CSV_URL)
                 .then(r => r.text())
                 .then(csvRaw => {
                     processExtractedDatabase(csvRaw);
-                    switchScreenContext('screen-hub');
+                    switchScreenContext('screen-hub'); // Smooth transition to home hub after parsing completes
                 })
                 .catch(err => {
                     console.error(err);
@@ -717,8 +713,6 @@
 
             const now = new Date();
 
-            // Row 0 is standard headers. Format: 
-            // Chinese, Pinyin, English, PartOfSpeech, Notes, C2E_Score, E2C_Score, C2E_Count, E2C_Count, C2E_Time, E2C_Time
             for (let i = 1; i < dataMatrix.length; i++) {
                 const row = dataMatrix[i];
                 if (!row || row.length < 5 || !row[0].trim()) continue;
@@ -741,11 +735,10 @@
                     }
                 };
 
-                // UNROLL TWIN SEPARATED INSTANCES FOR UNIQUE SIDES
                 ['CN_TO_EN', 'EN_TO_CN'].forEach(type => {
                     const tracking = type === 'CN_TO_EN' ? cardRef.c2e : cardRef.e2c;
                     
-                    let intervalDays = 0.003; // ~4 Min short loop default
+                    let intervalDays = 0.003; 
                     if (tracking.count > 0) {
                         const calculatedAverage = tracking.score / tracking.count;
                         const roundedScore = Math.max(1, Math.min(5, Math.round(calculatedAverage)));
@@ -755,7 +748,6 @@
                         else if (roundedScore === 4) intervalDays = 7;
                         else if (roundedScore === 5) intervalDays = 18;
 
-                        // Tabulate historical statistics metric buckets
                         if (calculatedAverage >= 4.5) countMastered++;
                         else if (calculatedAverage >= 2.5) countReviewing++;
                         else countStruggles++;
@@ -763,7 +755,6 @@
                         countUnstudied++;
                     }
 
-                    // DETERMINE OVERDUE STATUS
                     let isDue = false;
                     let urgencyValue = 0;
 
@@ -796,7 +787,6 @@
                 });
             }
 
-            // RECONSTRUCT CLEAN MISSION DRIVEN HUB INTERFACE
             const badgeNode = document.getElementById('hero-count-badge');
             const titleNode = document.getElementById('hero-card-title');
             const subtitleNode = document.getElementById('hero-card-subtitle');
@@ -820,7 +810,6 @@
                 primaryBtn.style.display = "none";
             }
 
-            // Load Secondary Stats Engine Data Fields
             document.getElementById('stat-mastered').innerText = countMastered;
             document.getElementById('stat-reviewing').innerText = countReviewing;
             document.getElementById('stat-struggles').innerText = countStruggles;
@@ -837,11 +826,9 @@
 
             if (isOverstudyMode) {
                 document.getElementById('session-mode-indicator').innerText = "Reviewing Random Cards";
-                // Select 25 completely random instances from across the entire master database
                 activeQueue = [...masterDeck].sort(() => 0.5 - Math.random()).slice(0, 25);
             } else {
                 document.getElementById('session-mode-indicator').innerText = "Daily Review Session";
-                // Filter down to due items and rank them by order of worst urgency descending
                 activeQueue = masterDeck.filter(c => c.isDueNow).sort((x, y) => y.urgency - x.urgency);
             }
 
@@ -865,7 +852,6 @@
                 return;
             }
 
-            // Smart Anti-Repetition Filter Loop Engine Check
             let chosenQueueIndex = 0;
             if (activeQueue.length > 1 && wordHistoryBuffer.length > 0) {
                 for (let i = 0; i < activeQueue.length; i++) {
@@ -881,7 +867,6 @@
 
             document.getElementById('session-counter').innerText = `${activeQueue.length} items left`;
 
-            // Setup Card UI Theme Styling
             if (window.activeCard.type === 'CN_TO_EN') {
                 cardNode.classList.remove('en-to-cn-mode');
                 document.getElementById('meta-card-direction').innerText = "Chinese → English";
@@ -898,7 +883,6 @@
                 }
             }
 
-            // Format Sub-Back Layout Items
             const backMain = document.getElementById('back-target-main');
             if (window.activeCard.type === 'CN_TO_EN') {
                 backMain.innerText = window.activeCard.english;
@@ -915,7 +899,6 @@
             if (window.activeCard.notes) descriptiveNote += ` — ${window.activeCard.notes}`;
             document.getElementById('back-target-english').innerText = descriptiveNote;
 
-            // Clear Hint State Visibility Elements
             const hintNode = document.getElementById('btn-hint-clue');
             hintNode.innerText = "Tap for Pinyin Clue";
             hintNode.style.opacity = "1";
@@ -931,7 +914,7 @@
         }
 
         function executeRevealHint(event) {
-            event.stopPropagation(); // Avoid triggering card flipping accidentally
+            event.stopPropagation();
             const hintNode = document.getElementById('btn-hint-clue');
             
             if (window.activeCard.type === 'CN_TO_EN') {
@@ -943,11 +926,10 @@
             hintNode.style.border = "1px solid var(--accent-primary)";
         }
 
-        // HIGH INTENSITY DYNAMIC DUAL INTRA-SESSION LEARNING PERFORMANCE MATRICES RE-QUEUER ENGINE
+        // PERFORMANCE RATING ENGINE
         function submitPerformanceRating(scoreDelta) {
             const card = window.activeCard;
 
-            // 1. Log historic tracking state for recovery undo pipeline functionality
             historicalReviewStack.push({
                 cardObject: card,
                 ratingDeltaApplied: scoreDelta,
@@ -961,21 +943,17 @@
             wordHistoryBuffer.push(card.chinese);
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
 
-            // 2. Splice current processing item target block from runtime active layout queue tracking pointer
             if (!isOverstudyMode) {
                 activeQueue.splice(window.currentActiveIndexInQueue, 1);
             }
 
-            // 3. Scale cumulative values and ship network request manifest payloads to cloud data arrays
             card.score += scoreDelta;
             card.count += 1;
             card.lastTime = new Date();
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
 
-            // 4. CRITICAL INTRA-SESSION SPACING LOOPS LOGIC IMPLEMENTATION
             if (!isOverstudyMode) {
                 if (scoreDelta === 1) {
-                    // Rating 1 (No Clue) -> Injects copy at +2 AND +7 cards away for aggressive reinforcement
                     const firstReinsertIndex = Math.min(2, activeQueue.length);
                     activeQueue.splice(firstReinsertIndex, 0, { ...card });
                     
@@ -983,18 +961,14 @@
                     activeQueue.splice(secondReinsertIndex, 0, { ...card });
                 } 
                 else if (scoreDelta === 2 || scoreDelta === 3) {
-                    // Rating 2/3 (Incorrect/Guessed) -> Injects a copy back at +4 cards away
                     const reinsertIndex = Math.min(4, activeQueue.length);
                     activeQueue.splice(reinsertIndex, 0, { ...card });
                 } 
                 else if (scoreDelta === 4) {
-                    // Rating 4 (Had to Think) -> Injects copy further back at +9 cards away to test retrieval delay
                     const reinsertIndex = Math.min(9, activeQueue.length);
                     activeQueue.splice(reinsertIndex, 0, { ...card });
                 }
-                // Rating 5 (I Know It) skips re-insertion completely, graduating the card out of the current deck session!
             } else {
-                // If in Random Card Review mode, slice it out of the endless array queue pool loop manually
                 activeQueue.splice(window.currentActiveIndexInQueue, 1);
             }
 
@@ -1006,10 +980,9 @@
         function triggerWritingRequeueLoop() {
             const card = window.activeCard;
             
-            // 1. Log manual action state context wrapper items inside the stack trackers
             historicalReviewStack.push({
                 cardObject: card,
-                ratingDeltaApplied: 5, // Scores as a full passing "5" to protect its long-term interval
+                ratingDeltaApplied: 5, 
                 previousScore: card.score,
                 previousCount: card.count,
                 previousLastTime: card.lastTime,
@@ -1020,16 +993,13 @@
             wordHistoryBuffer.push(card.chinese);
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
 
-            // Remove it from its current position
             activeQueue.splice(window.currentActiveIndexInQueue, 1);
 
-            // 2. Synchronize passing score with cloud backend database sheet files
             card.score += 5;
             card.count += 1;
             card.lastTime = new Date();
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: 5 });
 
-            // 3. Inject short-range writing reinforcement copy back inside session at +3 cards out
             const reinsertIndex = Math.min(3, activeQueue.length);
             activeQueue.splice(reinsertIndex, 0, { ...card });
 
@@ -1037,7 +1007,7 @@
             renderNextCardInstance();
         }
 
-        // ROBUST SYSTEM RECOVERY UNDO ENGINE PIPELINE INTERFACES
+        // UNDO PIPELINE INTERFACES
         function updateUndoActionButtonUI() {
             const btn = document.getElementById('btn-global-undo');
             if (historicalReviewStack.length > 0) {
@@ -1056,27 +1026,20 @@
 
             const lastActionFrame = historicalReviewStack.pop();
             const card = lastActionFrame.cardObject;
-
-            // Calculate inverse rollbacks to match Apps Script `rollbackDecrement` schema engine
             const inverseScoreRollbackValue = -lastActionFrame.ratingDeltaApplied;
 
-            // Revert changes inside internal client-side cache records tracking metrics arrays
             card.score = lastActionFrame.previousScore;
             card.count = lastActionFrame.previousCount;
             card.lastTime = lastActionFrame.previousLastTime;
 
-            // Ship dynamic undo rollback token payload down pipeline
             enqueueNetworkPayload({
                 word: card.chinese,
                 type: card.type,
                 score: inverseScoreRollbackValue
             });
 
-            // Reconstruct exact physical placement coordinates inside live queue track buffers
             if (lastActionFrame.wasInQueue) {
-                // If the dynamic loop injected extra copies during the missed card phase, clear them out first
                 activeQueue = activeQueue.filter(q => !(q.chinese === card.chinese && q.type === card.type));
-                // Restore original card item location coordinates
                 activeQueue.splice(lastActionFrame.queuePosition, 0, card);
             } else {
                 activeQueue.splice(lastActionFrame.queuePosition, 0, card);
@@ -1104,7 +1067,7 @@
             initializeAppSync();
         }
 
-        // PIPELINE OFFLINE STORAGE SYNC GATE ENQUEUER CODES
+        // NETWORK BACKGROUND PAYLOAD PROCESSING QUEUE
         function enqueueNetworkPayload(payload) {
             networkQueue.push(payload);
             updateNetworkToastUI();
