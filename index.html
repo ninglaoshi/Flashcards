@@ -620,9 +620,9 @@
     </div>
 
     <script>
-        // CONFIGURATION PIPELINES
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2S2_K_rN79_ZzVlXscX_8E89uD8m7oU8D-S5wA9wN1gLgP_1DbygPz7ZzMREzSg7A0L-BvWbM6q0n/pub?output=csv";
-        const WRITE_URL = "https://script.google.com/macros/s/AKfycbwM9wY89zYjK23WvYvXUeXzM_PzSzSzW1M-w9vPz7z9MREzSg7A0L-BvWbM6q0n/exec";
+        // CORRECT LIVE PRODUCTION URL CHANNELS FROM YOUR SYSTEM CONFIGURATION
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv";
+        const WRITE_URL = "https://script.google.com/macros/s/AKfycby3StwOXowIZlnjKHKjDVls8sxtOE2qBi9vWgm21R7z9gUCJofLMrbsSX06QAwlkP_GaA/exec";
 
         // APP CORE APPLICATION MEMORY STORAGE
         let masterDeck = [];
@@ -720,19 +720,19 @@
                 // PERFECTED CONFIGURATION MATRIX ALIGNMENT
                 const cardRef = {
                     chinese: row[0].trim(),
-                    pinyin: row[1].trim(),
-                    english: row[2].trim(),
-                    pos: row[3].trim(),
-                    notes: row[4].trim(),
+                    english: row[1] ? row[1].trim() : (row[3] ? row[3].trim() : ""),
+                    pinyin: row[2] ? row[2].trim() : (row[4] ? row[4].trim() : ""),
+                    pos: row[3] ? row[3].trim() : "",
+                    notes: row[4] ? row[4].trim() : "",
                     c2e: {
-                        score: Number(row[5]) || 0,     // F 
-                        count: Number(row[7]) || 0,     // H 
-                        lastTime: row[9] ? new Date(row[9]) : null // J 
+                        score: Number(row[5]) || 0,     // F
+                        count: Number(row[7]) || 0,     // H
+                        lastTime: row[9] ? new Date(row[9]) : null // J
                     },
                     e2c: {
-                        score: Number(row[6]) || 0,     // G 
-                        count: Number(row[8]) || 0,     // I 
-                        lastTime: row[10] ? new Date(row[10]) : null // K 
+                        score: Number(row[6]) || 0,     // G
+                        count: Number(row[8]) || 0,     // I
+                        lastTime: row[10] ? new Date(row[10]) : null // K
                     }
                 };
 
@@ -1027,13 +1027,12 @@
             card.count = lastActionFrame.previousCount;
             card.lastTime = lastActionFrame.previousLastTime;
 
-            // ALIGNED WITH GOOGLE APPS SCRIPT UNDO ROLLBACK LOGIC SCHEMA
             enqueueNetworkPayload({
                 word: card.chinese,
                 type: card.type,
                 score: lastActionFrame.ratingDeltaApplied,
-                rollbackDecrement: true, // Matches your code's data.rollbackDecrement check 
-                previousLastTime: lastActionFrame.previousLastTime ? lastActionFrame.previousLastTime.toISOString() : "" // Restores previous timestamp 
+                rollbackDecrement: true, 
+                previousLastTime: lastActionFrame.previousLastTime ? lastActionFrame.previousLastTime.toISOString() : "" 
             });
 
             if (lastActionFrame.wasInQueue) {
@@ -1124,4 +1123,3 @@
     </script>
 </body>
 </html>
-
