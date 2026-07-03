@@ -73,7 +73,7 @@
             display: flex;
         }
 
-        /* NEW HOME SCREEN STYLES */
+        /* HOME SCREEN STYLES */
         .hero-status-card {
             background-color: var(--panel-bg);
             border-radius: 16px;
@@ -630,7 +630,7 @@
         let historicalReviewStack = [];
         let wordHistoryBuffer = [];
         
-        window.activeCard = null; // FIXED SYNTAX: Variable global attachment
+        window.activeCard = null;
         window.currentActiveIndexInQueue = -1;
         let isOverstudyMode = false;
         
@@ -684,14 +684,14 @@
         // CORE PULL PIPELINE
         function initializeAppSync() {
             userWantsToExit = false;
-            switchScreenContext('screen-sync-gate'); // FIXED FLOW: Explicitly launch splash gate first
+            switchScreenContext('screen-sync-gate');
             document.getElementById('sync-gate-msg').innerText = "Downloading target parameters from engine database...";
 
             fetch(CSV_URL)
                 .then(r => r.text())
                 .then(csvRaw => {
                     processExtractedDatabase(csvRaw);
-                    switchScreenContext('screen-hub'); // Smooth transition to home hub after parsing completes
+                    switchScreenContext('screen-hub');
                 })
                 .catch(err => {
                     console.error(err);
@@ -700,7 +700,7 @@
                 });
         }
 
-        // COMPUTE INTERVAL SCHEDULER ALGORITHM ENGINE
+        // ALIGNED SHEET PARSING ENGINE
         function processExtractedDatabase(csvRaw) {
             const dataMatrix = parseSpreadsheetCSV(csvRaw);
             masterDeck = [];
@@ -717,6 +717,7 @@
                 const row = dataMatrix[i];
                 if (!row || row.length < 5 || !row[0].trim()) continue;
 
+                // PERFECTED CONFIGURATION MATRIX ALIGNMENT
                 const cardRef = {
                     chinese: row[0].trim(),
                     pinyin: row[1].trim(),
@@ -724,14 +725,14 @@
                     pos: row[3].trim(),
                     notes: row[4].trim(),
                     c2e: {
-                        score: Number(row[5]) || 0,
-                        count: Number(row[6]) || 0,
-                        lastTime: row[7] ? new Date(row[7]) : null
+                        score: Number(row[5]) || 0,     // F 
+                        count: Number(row[7]) || 0,     // H 
+                        lastTime: row[9] ? new Date(row[9]) : null // J 
                     },
                     e2c: {
-                        score: Number(row[8]) || 0,
-                        count: Number(row[9]) || 0,
-                        lastTime: row[10] ? new Date(row[10]) : null
+                        score: Number(row[6]) || 0,     // G 
+                        count: Number(row[8]) || 0,     // I 
+                        lastTime: row[10] ? new Date(row[10]) : null // K 
                     }
                 };
 
@@ -817,7 +818,6 @@
             document.getElementById('stat-unstudied-text').innerHTML = `📁 <strong>${countUnstudied}</strong> unique card configurations in your dictionary have not been introduced yet.`;
         }
 
-        // INITIALIZE ACTIVE QUEUES
         function launchStudySession(requestedRandomReviewMode) {
             isOverstudyMode = requestedRandomReviewMode;
             historicalReviewStack = [];
@@ -841,7 +841,6 @@
             renderNextCardInstance();
         }
 
-        // WORKSPACE CARD POP GENERATOR ENGINE
         function renderNextCardInstance() {
             const cardNode = document.getElementById('main-flashcard-node');
             cardNode.classList.remove('flipped');
@@ -926,7 +925,6 @@
             hintNode.style.border = "1px solid var(--accent-primary)";
         }
 
-        // PERFORMANCE RATING ENGINE
         function submitPerformanceRating(scoreDelta) {
             const card = window.activeCard;
 
@@ -976,7 +974,6 @@
             renderNextCardInstance();
         }
 
-        // SPECIAL WRITING LOOP OVERRIDE BUTTON FUNCTIONALITY
         function triggerWritingRequeueLoop() {
             const card = window.activeCard;
             
@@ -1007,7 +1004,6 @@
             renderNextCardInstance();
         }
 
-        // UNDO PIPELINE INTERFACES
         function updateUndoActionButtonUI() {
             const btn = document.getElementById('btn-global-undo');
             if (historicalReviewStack.length > 0) {
@@ -1026,16 +1022,18 @@
 
             const lastActionFrame = historicalReviewStack.pop();
             const card = lastActionFrame.cardObject;
-            const inverseScoreRollbackValue = -lastActionFrame.ratingDeltaApplied;
 
             card.score = lastActionFrame.previousScore;
             card.count = lastActionFrame.previousCount;
             card.lastTime = lastActionFrame.previousLastTime;
 
+            // ALIGNED WITH GOOGLE APPS SCRIPT UNDO ROLLBACK LOGIC SCHEMA
             enqueueNetworkPayload({
                 word: card.chinese,
                 type: card.type,
-                score: inverseScoreRollbackValue
+                score: lastActionFrame.ratingDeltaApplied,
+                rollbackDecrement: true, // Matches your code's data.rollbackDecrement check 
+                previousLastTime: lastActionFrame.previousLastTime ? lastActionFrame.previousLastTime.toISOString() : "" // Restores previous timestamp 
             });
 
             if (lastActionFrame.wasInQueue) {
@@ -1051,7 +1049,6 @@
             renderNextCardInstance();
         }
 
-        // TERMINATION RUNTIMES
         function abortSessionAndReturnHome() {
             if (networkQueue.length > 0) {
                 const confirmExit = confirm("You have background sync payloads processing. Exit anyway and let updates upload in the background?");
@@ -1067,7 +1064,6 @@
             initializeAppSync();
         }
 
-        // NETWORK BACKGROUND PAYLOAD PROCESSING QUEUE
         function enqueueNetworkPayload(payload) {
             networkQueue.push(payload);
             updateNetworkToastUI();
@@ -1128,4 +1124,3 @@
     </script>
 </body>
 </html>
-
