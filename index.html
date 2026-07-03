@@ -67,11 +67,6 @@
             border-radius: 16px;
             text-align: center;
             border: 1px solid rgba(255,255,255,0.03);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 84px;
         }
         .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--accent-primary); }
         .stat-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px; }
@@ -79,10 +74,12 @@
         .mastery-panel {
             background: rgba(15, 23, 42, 0.3);
             border-radius: 16px;
-            padding: 16px;
+            padding: 14px;
             margin-bottom: 24px;
         }
-        .mastery-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 14px; letter-spacing: 0.5px; text-align: center;}
+        .mastery-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; text-align: center;}
+        .mastery-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; color: #cbd5e1; }
+        .mastery-row:last-child { margin-bottom: 0; }
 
         .btn-start {
             width: 100%;
@@ -123,7 +120,7 @@
             font-weight: 500;
         }
         
-        /* HOME BUTTON */
+        /* ENHANCED HOME BUTTON */
         .btn-nav-control {
             background: #334155;
             border: 1px solid rgba(255,255,255,0.1);
@@ -144,7 +141,7 @@
         /* REVEAL SLIDE VIEWPORT PANEL */
         .flashcard-container {
             width: 100%;
-            height: 460px;
+            height: 460px; /* Expanded to utilize phone canvas space */
             position: relative;
             margin-bottom: 20px;
             background: var(--back-card-bg);
@@ -176,6 +173,7 @@
         #prompt-pane.cn-mode { background: var(--front-cn-bg); }
         #prompt-pane.en-mode { background: var(--front-en-bg); }
 
+        /* When answer is revealed, prompt slides to bottom 35% area */
         #prompt-pane.revealed-state {
             height: 35%;
             top: 65%;
@@ -220,7 +218,7 @@
         .en-mode .tag-pill { color: var(--btn-5); }
         #answer-pane .tag-pill { color: var(--text-muted); margin-bottom: 20px;}
 
-        /* PINYIN CLUE BUTTON */
+        /* ENHANCED PINYIN CLUE BUTTON */
         .clue-action-btn {
             background: #0284c7;
             border: 1px solid rgba(255,255,255,0.15);
@@ -373,36 +371,9 @@
 
         <div class="mastery-panel">
             <div class="mastery-title">Knowledge Breakdown</div>
-            
-            <div style="margin-bottom: 12px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span>🔥 Mastered (Avg ≥4.5)</span>
-                    <span id="lbl-lv5" style="font-weight:700; color:#10b981;">0</span>
-                </div>
-                <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
-                    <div id="bar-lv5" style="width:0%; height:100%; background:#10b981; transition:width 0.5s;"></div>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 12px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span>⚡ Reviewing (Avg 2.5-4.4)</span>
-                    <span id="lbl-mid" style="font-weight:700; color:#38bdf8;">0</span>
-                </div>
-                <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
-                    <div id="bar-mid" style="width:0%; height:100%; background:#38bdf8; transition:width 0.5s;"></div>
-                </div>
-            </div>
-
-            <div>
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span>⚠️ Struggles (Avg &lt;2.5)</span>
-                    <span id="lbl-lv1" style="font-weight:700; color:#ef4444;">0</span>
-                </div>
-                <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden;">
-                    <div id="bar-lv1" style="width:0%; height:100%; background:#ef4444; transition:width 0.5s;"></div>
-                </div>
-            </div>
+            <div class="mastery-row"><span>🔥 Mastered (Avg ≥4.5):</span><span id="m-lv5">0</span></div>
+            <div class="mastery-row"><span>⚡ Reviewing (Avg 2.5-4.4):</span><span id="m-mid">0</span></div>
+            <div class="mastery-row"><span>⚠️ Struggles (Avg &lt;2.5):</span><span id="m-lv1">0</span></div>
         </div>
 
         <button class="btn-start" id="action-btn" onclick="startSession()">Start Session</button>
@@ -456,7 +427,7 @@
         </div>
     </div>
 
-    <script>
+    <script {nonce}>
         const READ_URL = `https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv`;
         const WRITE_URL = `https://script.google.com/macros/s/AKfycby3StwOXowIZlnjKHKjDVls8sxtOE2qBi9vWgm21R7z9gUCJofLMrbsSX06QAwlkP_GaA/exec`;
 
@@ -468,6 +439,7 @@
         let isOverstudyMode = false;
         let clueWasActivated = false;
 
+        // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
         let networkQueue = [];
         let isProcessingNetworkQueue = false;
         let userWantsToExit = false;
@@ -582,30 +554,18 @@
                 }
             }
 
-            // PRODUCTION FIRST SORT
+            // EN_TO_CN PRODUCTION BIAS SORT MODIFIER
             activeQueue.sort((a, b) => {
                 let scoreA = a.urgency + (a.type === 'EN_TO_CN' ? 0.01 : 0);
                 let scoreB = b.urgency + (b.type === 'EN_TO_CN' ? 0.01 : 0);
                 return scoreB - scoreA;
             });
 
-            // "BREAK TIME" HANDLER
-            if (naturalReviewsDue === 0) {
-                document.getElementById('stat-due').innerHTML = "<span style='font-size:1.1rem; color:#10b981;'>🏝️ Break Time</span>";
-            } else {
-                document.getElementById('stat-due').innerText = naturalReviewsDue;
-            }
+            document.getElementById('stat-due').innerText = naturalReviewsDue;
             document.getElementById('stat-new').innerText = unviewedCount;
-
-            // REFRESH PROGRESS BARS FOOTPRINT WIDTHS
-            const totalCardsCalculated = Math.max(1, lv5 + mid + lv1);
-            document.getElementById('bar-lv5').style.width = `${(lv5 / totalCardsCalculated) * 100}%`;
-            document.getElementById('bar-mid').style.width = `${(mid / totalCardsCalculated) * 100}%`;
-            document.getElementById('bar-lv1').style.width = `${(lv1 / totalCardsCalculated) * 100}%`;
-            
-            document.getElementById('lbl-lv5').innerText = lv5;
-            document.getElementById('lbl-mid').innerText = mid;
-            document.getElementById('lbl-lv1').innerText = lv1;
+            document.getElementById('m-lv5').innerText = lv5;
+            document.getElementById('m-mid').innerText = mid;
+            document.getElementById('m-lv1').innerText = lv1;
 
             const actionBtn = document.getElementById('action-btn');
             if (activeQueue.length === 0) {
@@ -645,30 +605,15 @@
         }
 
         function renderNextCardInstance() {
-    // BACKFILL PROTECTION LOOP FOR EXHAUSTED QUEUES
-    if (activeQueue.length === 0) {
-        // Only inject random filler cards if we are in a normal session and running out of cards to space out pending loops
-        if (!isOverstudyMode) {
-            const safeFillers = masterDeck.filter(c => c.chinese !== window.activeCard?.chinese);
-            for(let i = 0; i < Math.min(5, safeFillers.length); i++) {
-                let randomCard = safeFillers[Math.floor(Math.random() * safeFillers.length)];
-                activeQueue.push({ ...randomCard });
-            }
-            
-            // If still absolutely empty with no fillers possible in normal mode, escape to home dashboard
-            if (activeQueue.length === 0) {
+            if (activeQueue.length === 0 && !isOverstudyMode) {
                 exitToDashboard();
                 return;
             }
-        }
-        // If we are in Free Review mode (isOverstudyMode === true), we do NOT exit here. 
-        // We let it fall through to the masterDeck sorting logic below!
-    }
 
             let card = null;
             let selectedQueueIndex = 0;
 
-            if (isOverstudyMode && activeQueue.length === 0) {
+            if (isOverstudyMode) {
                 masterDeck.sort((a,b) => {
                     if (a.score !== b.score) return a.score - b.score;
                     if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
@@ -692,7 +637,7 @@
                     }
                 }
                 if (!card) { card = activeQueue[0]; selectedQueueIndex = 0; }
-                document.getElementById('progress-counter').innerText = isOverstudyMode ? "Free Review" : `${activeQueue.length} items left`;
+                document.getElementById('progress-counter').innerText = `${activeQueue.length} items left`;
             }
 
             window.activeCard = card;
@@ -814,29 +759,13 @@
 
             wordHistoryBuffer.push(card.chinese);
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
-            
-            if (!isOverstudyMode) {
-                activeQueue.splice(window.currentActiveIndexInQueue, 1);
-            }
+            if (!isOverstudyMode) activeQueue.splice(window.currentActiveIndexInQueue, 1);
 
             card.score += scoreDelta;
             card.count += 1;
             card.lastTime = new Date();
 
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
-
-            // INTRA-SESSION LOOPS: Inject copy cards back into queue based on mistakes
-            let scheduleOffsets = [];
-            if (scoreDelta === 4) scheduleOffsets = [10];
-            if (scoreDelta === 3) scheduleOffsets = [6, 15];
-            if (scoreDelta === 2) scheduleOffsets = [4, 10, 20];
-            if (scoreDelta === 1) scheduleOffsets = [3, 7, 12, 20];
-
-            scheduleOffsets.forEach(offset => {
-                const targetIndex = Math.min(offset, activeQueue.length);
-                activeQueue.splice(targetIndex, 0, { ...card });
-            });
-
             renderNextCardInstance();
         }
 
@@ -867,7 +796,13 @@
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: 4 });
 
             const reinsertIndex = Math.min(3, activeQueue.length);
-            activeQueue.splice(reinsertIndex, 0, { ...card });
+            const clonedCardInstance = { ...card };
+            
+            if (isOverstudyMode) {
+                activeQueue.push(clonedCardInstance); 
+            } else {
+                activeQueue.splice(reinsertIndex, 0, clonedCardInstance);
+            }
 
             renderNextCardInstance();
         }
@@ -951,4 +886,3 @@
     </script>
 </body>
 </html>
-
