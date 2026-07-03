@@ -28,906 +28,725 @@
             background-color: var(--bg-dark);
             color: var(--text-main);
             margin: 0;
-            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
-            user-select: none;
-            -webkit-user-select: none;
+            padding: 12px;
+            box-sizing: border-box;
             overflow-x: hidden;
         }
 
-        .container {
+        /* DASHBOARD WELCOME SYSTEM */
+        .dashboard-container {
             width: 100%;
-            max-width: 500px;
-            padding: 16px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #334155;
-        }
-
-        .date-display {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .screen {
-            display: none;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-
-        .screen.active {
-            display: flex;
-        }
-
-        /* HOME SCREEN STYLES */
-        .hero-status-card {
-            background-color: var(--panel-bg);
-            border-radius: 16px;
-            padding: 32px 16px;
-            text-align: center;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            border: 1px solid #334155;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 12px;
-            background-color: #0284c7;
-            color: #fff;
-        }
-
-        .hero-badge.caught-up {
-            background-color: #059669;
-            font-size: 2rem;
-        }
-
-        .hero-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0 0 4px 0;
-        }
-
-        .hero-subtitle {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin: 0;
-        }
-
-        .action-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .btn-primary {
-            background-color: var(--accent-primary);
-            color: #0f172a;
-            font-weight: 700;
-            font-size: 1.1rem;
-            padding: 16px;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
-            transition: opacity 0.2s;
-        }
-
-        .btn-primary:disabled {
-            background-color: #334155;
-            color: #64748b;
-            box-shadow: none;
-            cursor: not-allowed;
-            display: none;
-        }
-
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--text-main);
-            font-weight: 600;
-            font-size: 1rem;
-            padding: 14px;
-            border-radius: 12px;
-            border: 2px solid #334155;
-            cursor: pointer;
-            text-align: center;
-            transition: background-color 0.2s;
-        }
-
-        .info-panel {
-            background-color: rgba(30, 41, 59, 0.5);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-            border: 1px solid #1e293b;
-        }
-
-        .info-panel-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            margin: 0 0 12px 0;
-        }
-
-        .progress-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.95rem;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-        }
-        .progress-row:last-child {
-            border-bottom: none;
-        }
-
-        .progress-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .progress-count {
-            font-weight: 700;
-        }
-
-        .new-words-text {
-            font-size: 0.95rem;
-            color: var(--text-main);
-            line-height: 1.4;
-        }
-
-        /* INITIAL SYNC GATE LOADING SCREEN */
-        .sync-gate-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 60px 20px;
-            margin-top: 40px;
-        }
-
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(56, 189, 248, 0.1);
-            border-left-color: var(--accent-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* FLASHCARD STUDY SCREEN STYLES */
-        .flashcard-wrapper {
-            position: relative;
-            width: 100%;
-            height: 280px;
-            perspective: 1000px;
-            margin-bottom: 16px;
-        }
-
-        .flashcard {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            transform-style: preserve-3d;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-        }
-
-        .flashcard.flipped {
-            transform: rotateY(180deg);
-        }
-
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            max-width: 380px;
+            background: var(--panel-bg);
+            border-radius: 24px;
             padding: 24px;
             box-sizing: border-box;
-            border: 1px solid #334155;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .card-face-front {
-            background: var(--front-cn-bg);
-        }
+        .dash-header { text-align: center; margin-bottom: 24px; }
+        .dash-title { font-size: 1.6rem; font-weight: 700; margin: 0; color: var(--text-main); }
+        .dash-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
 
-        .flashcard.en-to-cn-mode .card-face-front {
-            background: var(--front-en-bg);
-        }
-
-        .card-face-back {
-            background-color: var(--back-card-bg);
-            transform: rotateY(180deg);
-            justify-content: space-between;
-        }
-
-        .card-meta-tag {
-            position: absolute;
-            top: 14px;
-            left: 16px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--accent-primary);
-            background-color: rgba(56, 189, 248, 0.1);
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        .card-main-text {
-            font-size: 2.8rem;
-            font-weight: 700;
-            text-align: center;
-            line-height: 1.2;
-            word-break: break-word;
-        }
-
-        .card-main-text.small-eng {
-            font-size: 1.8rem;
-            font-weight: 600;
-        }
-
-        .clue-hint-container {
-            margin-top: 14px;
-            min-height: 24px;
-        }
-
-        .clue-badge {
-            background-color: rgba(255,255,255,0.08);
-            border: 1px dashed rgba(255,255,255,0.2);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .back-scrollable-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-grow: 1;
-            width: 100%;
-            overflow-y: auto;
-            padding: 10px 0;
-        }
-
-        .back-primary-result {
-            font-size: 2.4rem;
-            font-weight: 700;
-            color: #fff;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        .back-primary-result.small-eng {
-            font-size: 1.6rem;
-            font-weight: 600;
-        }
-
-        .back-secondary-result {
-            font-size: 1.25rem;
-            color: #38bdf8;
-            font-weight: 600;
-            margin-top: 6px;
-            text-align: center;
-        }
-
-        .back-tertiary-result {
-            font-size: 1rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            text-align: center;
-            font-style: italic;
-        }
-
-        .tap-prompt {
-            position: absolute;
-            bottom: 14px;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        /* GRADING CONTROL INTERFACES */
-        .controls-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            margin-top: auto;
-        }
-
-        .grading-row {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            width: 100%;
-        }
-
-        .btn-grade {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 4px;
-            border-radius: 12px;
-            border: none;
-            color: #fff;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .btn-grade:active {
-            transform: scale(0.95);
-        }
-
-        .btn-grade .g-num { font-size: 1.1rem; }
-        .btn-grade .g-lbl { font-size: 0.65rem; font-weight: 500; opacity: 0.9; margin-top: 2px; text-transform: uppercase; }
-
-        .bg-g1 { background-color: var(--btn-1); }
-        .bg-g2 { background-color: var(--btn-2); }
-        .bg-g3 { background-color: var(--btn-3); }
-        .bg-g4 { background-color: var(--btn-4); }
-        .bg-g5 { background-color: var(--btn-5); }
-
-        .auxiliary-actions-row {
+        .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            width: 100%;
+            gap: 12px;
+            margin-bottom: 24px;
         }
 
-        .btn-aux {
-            background-color: #1e293b;
-            color: var(--text-main);
-            border: 1px solid #334155;
-            padding: 12px;
-            border-radius: 10px;
+        .stat-box {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 16px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+        .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--accent-primary); }
+        .stat-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px; }
+
+        .mastery-panel {
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 24px;
+        }
+        .mastery-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; text-align: center;}
+        .mastery-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; color: #cbd5e1; }
+        .mastery-row:last-child { margin-bottom: 0; }
+
+        .btn-start {
+            width: 100%;
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(56, 189, 248, 0.2);
+            transition: transform 0.1s;
+        }
+        .btn-start:active { transform: scale(0.98); }
+
+        /* MAIN FLASHCARD WORKSPACE */
+        .workspace { width: 100%; max-width: 380px; display: flex; flex-direction: column; }
+        
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding: 0 4px;
+        }
+        .header-left-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .counter-pill {
+            background: var(--panel-bg);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        /* ENHANCED HOME BUTTON */
+        .btn-nav-control {
+            background: #334155;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #f1f5f9;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: background 0.15s, transform 0.1s;
+        }
+        .btn-nav-control:active { transform: scale(0.95); background: #475569; }
+
+        /* REVEAL SLIDE VIEWPORT PANEL */
+        .flashcard-container {
+            width: 100%;
+            height: 460px; /* Expanded to utilize phone canvas space */
+            position: relative;
+            margin-bottom: 20px;
+            background: var(--back-card-bg);
+            border-radius: 32px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.08);
+            overflow: hidden;
+            cursor: pointer;
         }
 
-        /* SYSTEM SUB-COMPONENTS */
-        .session-stats-bar {
+        /* CARD CONTENT LAYOUT */
+        .slide-pane {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #prompt-pane {
+            z-index: 2;
+            justify-content: center;
+            align-items: center;
+        }
+        #prompt-pane.cn-mode { background: var(--front-cn-bg); }
+        #prompt-pane.en-mode { background: var(--front-en-bg); }
+
+        /* When answer is revealed, prompt slides to bottom 35% area */
+        #prompt-pane.revealed-state {
+            height: 35%;
+            top: 65%;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding: 15px;
+        }
+        #prompt-pane.revealed-state .tag-row { display: none; }
+
+        #answer-pane {
+            z-index: 1;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(-20px);
+            height: 65%;
+            top: 0;
+        }
+        #answer-pane.revealed-state {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tag-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #1e293b;
-            padding: 10px 16px;
-            border-radius: 10px;
-            margin-bottom: 14px;
-            font-size: 0.85rem;
-            font-weight: 600;
+            width: 100%;
+            margin-bottom: auto;
         }
 
-        .pill-counter {
-            background-color: #0f172a;
-            padding: 4px 10px;
-            border-radius: 12px;
-            color: var(--accent-primary);
+        .tag-pill {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 5px 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            width: fit-content;
         }
+        .cn-mode .tag-pill { color: var(--accent-primary); }
+        .en-mode .tag-pill { color: var(--btn-5); }
+        #answer-pane .tag-pill { color: var(--text-muted); margin-bottom: 20px;}
+
+        /* ENHANCED PINYIN CLUE BUTTON */
+        .clue-action-btn {
+            background: #0284c7;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+            transition: all 0.2s;
+        }
+        .clue-action-btn:active { transform: scale(0.95); background: #0369a1; }
+        
+        .live-clue-banner {
+            font-size: 1.1rem;
+            color: var(--btn-3);
+            font-weight: 600;
+            margin-top: 12px;
+            letter-spacing: 1.5px;
+            background: rgba(234, 179, 8, 0.08);
+            padding: 6px 16px;
+            border-radius: 10px;
+            border: 1px dashed rgba(234, 179, 8, 0.2);
+            display: inline-block;
+        }
+
+        .content-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: auto;
+        }
+
+        .main-text { 
+            font-size: 3.2rem; 
+            font-weight: 700; 
+            line-height: 1.1;
+            word-break: break-word; 
+            transition: font-size 0.3s;
+        }
+        #prompt-pane.revealed-state .main-text {
+            font-size: 1.4rem !important;
+            line-height: 1.2;
+        }
+        
+        .back-main { 
+            font-size: 2.2rem; 
+            font-weight: 700; 
+            color: #fff; 
+            margin-bottom: 8px;
+            line-height: 1.2;
+            word-break: break-word; 
+        }
+        .back-sub { 
+            font-size: 1.5rem; 
+            color: var(--accent-primary); 
+            font-weight: 400; 
+            transition: color 0.4s ease;
+        }
+        .back-sub.expanded-from-clue {
+            color: var(--btn-3);
+        }
+
+        /* CONTROLS */
+        .controls-wrapper { width: 100%; min-height: 140px; }
+        .hint-banner { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 15px; margin-top: 10px; }
+        
+        .grading-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            width: 100%;
+        }
+
+        .grad-btn {
+            border: none;
+            color: white;
+            height: 75px; 
+            font-size: 0.62rem;
+            font-weight: 700;
+            border-radius: 18px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+            padding: 4px;
+        }
+        .grad-btn:active { transform: scale(0.92); }
+        .grad-btn span { font-size: 1.1rem; }
+        
+        .b1 { background: var(--btn-1); }
+        .b2 { background: var(--btn-2); }
+        .b3 { background: var(--btn-3); color: #0f172a; }
+        .b4 { background: var(--btn-4); }
+        .b5 { background: var(--btn-5); }
 
         #toast {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #0284c7;
-            color: #fff;
-            padding: 10px 18px;
+            bottom: 30px;
+            background: #0284c7;
+            color: white;
+            padding: 10px 20px;
             border-radius: 30px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4);
-            z-index: 9999;
             display: none;
-            align-items: center;
-            gap: 8px;
+            z-index: 999;
         }
-
-        .queue-badge {
-            background-color: #fff;
-            color: #0284c7;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: 800;
+        #queue-badge {
+            background: #f97316;
+            margin-left: 6px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <div style="font-weight: 800; font-size: 1.1rem; color: #fff;">SRS Flashcards</div>
-            <div id="header-date" class="date-display"></div>
-        </header>
+    <div id="toast">Updating Cloud...<span id="queue-badge">0</span></div>
 
-        <div id="screen-sync-gate" class="screen active">
-            <div class="sync-gate-container">
-                <div class="spinner"></div>
-                <h3 style="margin: 0 0 8px 0; font-size: 1.2rem;">Synchronizing Database</h3>
-                <p id="sync-gate-msg" style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">
-                    Pulling live vocabulary manifests from your Google Sheet...
-                </p>
+    <div id="loading-screen" style="color: var(--accent-primary); font-weight: 600; text-align: center; padding: 20px;">Syncing Master Data...</div>
+
+    <div id="dashboard" class="dashboard-container" style="display: none;">
+        <div class="dash-header">
+            <h2 class="dash-title">Study Dashboard</h2>
+            <div class="dash-subtitle" id="dash-date">Calculating reviews...</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-val" id="stat-due">0</div>
+                <div class="stat-lbl">Due Now</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" id="stat-new">0</div>
+                <div class="stat-lbl">New</div>
             </div>
         </div>
 
-        <div id="screen-hub" class="screen">
-            <div class="hero-status-card">
-                <div id="hero-count-badge" class="hero-badge">0</div>
-                <h2 id="hero-card-title" class="hero-title">Cards Due</h2>
-                <p id="hero-card-subtitle" class="hero-subtitle">Your review queue is loading...</p>
-            </div>
+        <div class="mastery-panel">
+            <div class="mastery-title">Knowledge Breakdown</div>
+            <div class="mastery-row"><span>🔥 Mastered (Avg ≥4.5):</span><span id="m-lv5">0</span></div>
+            <div class="mastery-row"><span>⚡ Reviewing (Avg 2.5-4.4):</span><span id="m-mid">0</span></div>
+            <div class="mastery-row"><span>⚠️ Struggles (Avg &lt;2.5):</span><span id="m-lv1">0</span></div>
+        </div>
 
-            <div class="action-stack">
-                <button id="btn-start-due" class="btn-primary" onclick="launchStudySession(false)" disabled>
-                    Start Daily Review
+        <button class="btn-start" id="action-btn" onclick="startSession()">Start Session</button>
+    </div>
+
+    <div id="study-space" class="workspace" style="display: none;">
+        <div class="workspace-header">
+            <div class="header-left-actions">
+                <button class="btn-nav-control" id="home-element" onclick="exitToDashboard()">
+                    <span>🏠</span> Home
                 </button>
-                <button class="btn-secondary" onclick="launchStudySession(true)">
-                    Review Random Cards
+                <button class="btn-nav-control" id="undo-element" onclick="triggerUndo()" style="visibility: hidden;">
+                    <span>↩</span> Undo
                 </button>
             </div>
+            <div class="counter-pill" id="progress-counter">Loading cards...</div>
+        </div>
 
-            <div class="info-panel">
-                <h3 class="info-panel-title">📊 Knowledge Breakdown</h3>
-                <div class="progress-row">
-                    <span class="progress-label">🏆 Mastered (Avg ≥ 4.5)</span>
-                    <span id="stat-mastered" class="progress-count">0</span>
+        <div class="flashcard-container" id="deck-viewport" onclick="executeRevealSlide()">
+            <div class="slide-pane" id="prompt-pane">
+                <div class="tag-row">
+                    <div class="tag-pill" id="front-pill-tag">Prompt</div>
+                    <button class="clue-action-btn" id="clue-trigger" onclick="generatePinyinClue(event)" style="display: none;">Pinyin Clue</button>
                 </div>
-                <div class="progress-row">
-                    <span class="progress-label">🔄 Reviewing (Avg 2.5–4.4)</span>
-                    <span id="stat-reviewing" class="progress-count">0</span>
-                </div>
-                <div class="progress-row">
-                    <span class="progress-label">⚠️ Struggles (Avg &lt; 2.5)</span>
-                    <span id="stat-struggles" class="progress-count">0</span>
+                <div class="content-body">
+                    <div class="main-text" id="front-display-text">...</div>
+                    <div id="clue-display-box" style="display: none;">
+                        <div class="live-clue-banner" id="clue-text-string"></div>
+                    </div>
                 </div>
             </div>
-
-            <div class="info-panel">
-                <h3 class="info-panel-title">📁 Deck Status</h3>
-                <div id="stat-unstudied-text" class="new-words-text">
-                    Checking unstudied card records...
+            <div class="slide-pane" id="answer-pane">
+                <div class="tag-pill">Meaning & Pinyin</div>
+                <div class="content-body">
+                    <div class="back-main" id="back-display-main">...</div>
+                    <div class="back-sub" id="back-display-sub">...</div>
                 </div>
             </div>
         </div>
 
-        <div id="screen-study" class="screen">
-            <div class="session-stats-bar">
-                <span id="session-mode-indicator" style="color: var(--text-muted);">Session</span>
-                <span id="session-counter" class="pill-counter">0 items left</span>
-            </div>
-
-            <div class="flashcard-wrapper">
-                <div id="main-flashcard-node" class="flashcard" onclick="toggleCardFlipState()">
-                    
-                    <div class="card-face card-face-front">
-                        <div id="meta-card-direction" class="card-meta-tag">CN → EN</div>
-                        <div id="front-card-text" class="card-main-text">拼音</div>
-                        <div class="clue-hint-container">
-                            <span id="btn-hint-clue" class="clue-badge" onclick="executeRevealHint(event)">
-                                Tap for Pinyin Clue
-                            </span>
-                        </div>
-                        <div class="tap-prompt">Tap Card to Flip</div>
-                    </div>
-
-                    <div class="card-face card-face-back">
-                        <div class="back-scrollable-area">
-                            <div id="back-target-main" class="back-primary-result">Meaning</div>
-                            <div id="back-target-pinyin" class="back-secondary-result">pīnyīn</div>
-                            <div id="back-target-english" class="back-tertiary-result">Supplementary notes</div>
-                        </div>
-                        <div class="tap-prompt">Tap Card to Flip Back</div>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="controls-wrapper">
-                <div id="grading-interface-block" class="grading-row" style="visibility: hidden;">
-                    <button class="btn-grade bg-g1" onclick="submitPerformanceRating(1)">
-                        <span class="g-num">1</span><span class="g-lbl">No Clue</span>
-                    </button>
-                    <button class="btn-grade bg-g2" onclick="submitPerformanceRating(2)">
-                        <span class="g-num">2</span><span class="g-lbl">Wrong</span>
-                    </button>
-                    <button class="btn-grade bg-g3" onclick="submitPerformanceRating(3)">
-                        <span class="g-num">3</span><span class="g-lbl">Guessed</span>
-                    </button>
-                    <button class="btn-grade bg-g4" onclick="submitPerformanceRating(4)">
-                        <span class="g-num">4</span><span class="g-lbl">Think</span>
-                    </button>
-                    <button class="btn-grade bg-g5" onclick="submitPerformanceRating(5)">
-                        <span class="g-num">5</span><span class="g-lbl">Know It</span>
-                    </button>
-                </div>
-
-                <div class="auxiliary-actions-row">
-                    <button class="btn-aux" onclick="triggerWritingRequeueLoop()">
-                        ✍️ Review Writing
-                    </button>
-                    <button id="btn-global-undo" class="btn-aux" onclick="executeHistoricalUndoStep()" style="opacity: 0.4; cursor: not-allowed;" disabled>
-                        ↩️ Undo Last
-                    </button>
-                </div>
-                <button class="btn-secondary" onclick="abortSessionAndReturnHome()" style="width: 100%; margin-top: 4px; padding: 10px;">
-                    🏠 Return to Hub
-                </button>
+        <div class="controls-wrapper">
+            <div id="tap-hint" class="hint-banner">Tap card to reveal answer</div>
+            <div id="grade-controls" class="grading-grid" style="display: none;">
+                <button class="grad-btn b1" onclick="submitPerformanceRating(1)"><span>❌</span>No Clue</button>
+                <button class="grad-btn b2" onclick="submitPerformanceRating(2)"><span>⏳</span>Incorrect</button>
+                <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Guessed</button>
+                <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Had to Think</button>
+                <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it</button>
+                <button class="grad-btn" onclick="triggerWritingRequeueLoop()" style="background:#4b5563; grid-column: span 5; height: 50px; margin-top: 6px; font-size: 0.75rem;"><span>✍️</span>Review Writing (See Again This Session)</button>
             </div>
         </div>
     </div>
 
-    <div id="toast">
-        🔄 Syncing adjustments to cloud... <span id="queue-badge" class="queue-badge" style="display:none;"></span>
-    </div>
+    <script {nonce}>
+        const READ_URL = `https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv`;
+        const WRITE_URL = `https://script.google.com/macros/s/AKfycby3StwOXowIZlnjKHKjDVls8sxtOE2qBi9vWgm21R7z9gUCJofLMrbsSX06QAwlkP_GaA/exec`;
 
-    <script>
-        // CORRECT LIVE PRODUCTION URL CHANNELS FROM YOUR SYSTEM CONFIGURATION
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv";
-        const WRITE_URL = "https://script.google.com/macros/s/AKfycby3StwOXowIZlnjKHKjDVls8sxtOE2qBi9vWgm21R7z9gUCJofLMrbsSX06QAwlkP_GaA/exec";
-
-        // APP CORE APPLICATION MEMORY STORAGE
         let masterDeck = [];
         let activeQueue = [];
         let historicalReviewStack = [];
-        let wordHistoryBuffer = [];
-        
-        window.activeCard = null;
-        window.currentActiveIndexInQueue = -1;
+        let wordHistoryBuffer = []; 
+        let isRevealed = false;
         let isOverstudyMode = false;
-        
-        // BACKGROUND PERSISTENT SYNC QUEUE SYSTEM
+        let clueWasActivated = false;
+
+        // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
         let networkQueue = [];
         let isProcessingNetworkQueue = false;
         let userWantsToExit = false;
 
-        // INITIAL ON-LOAD RUNTIME
-        document.addEventListener("DOMContentLoaded", () => {
-            renderCurrentSystemDate();
-            initializeAppSync();
-        });
+        document.getElementById('dash-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
-        function renderCurrentSystemDate() {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('header-date').innerText = new Date().toLocaleDateString('en-US', options);
-        }
-
-        function switchScreenContext(targetId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(targetId).classList.add('active');
-        }
-
-        // CSV EXTRACTION PARSER ENGINE
-        function parseSpreadsheetCSV(text) {
-            const lines = [];
-            let row = [""];
-            let insideQuotes = false;
-
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const nextChar = text[i+1];
-                if (char === '"') {
-                    if (insideQuotes && nextChar === '"') { row[row.length - 1] += '"'; i++; }
-                    else { insideQuotes = !insideQuotes; }
-                } else if (char === ',' && !insideQuotes) {
-                    row.push('');
-                } else if ((char === '\r' || char === '\n') && !insideQuotes) {
-                    if (char === '\r' && nextChar === '\n') { i++; }
-                    lines.push(row);
-                    row = [''];
-                } else {
-                    row[row.length - 1] += char;
-                }
-            }
-            if (row.length > 1 || row[0] !== '') lines.push(row);
-            return lines;
-        }
-
-        // CORE PULL PIPELINE
         function initializeAppSync() {
             userWantsToExit = false;
-            switchScreenContext('screen-sync-gate');
-            document.getElementById('sync-gate-msg').innerText = "Downloading target parameters from engine database...";
-
-            fetch(CSV_URL)
-                .then(r => r.text())
-                .then(csvRaw => {
-                    processExtractedDatabase(csvRaw);
-                    switchScreenContext('screen-hub');
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('study-space').style.display = 'none';
+            document.getElementById('loading-screen').style.display = 'block';
+            document.getElementById('loading-screen').innerText = "Syncing Master Data...";
+            
+            masterDeck = []; 
+            
+            fetch(READ_URL)
+                .then(res => res.text())
+                .then(csvText => {
+                    parseSheetDatabase(csvText);
+                    compileDashboardMetrics();
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
                 })
                 .catch(err => {
-                    console.error(err);
-                    document.getElementById('sync-gate-msg').innerText = "Sync Failed. Retrying connection in 5 seconds...";
-                    setTimeout(initializeAppSync, 5000);
+                    document.getElementById('loading-screen').innerText = "Connection failed. Check permissions.";
                 });
         }
 
-        // ALIGNED SHEET PARSING ENGINE
-        function processExtractedDatabase(csvRaw) {
-            const dataMatrix = parseSpreadsheetCSV(csvRaw);
-            masterDeck = [];
+        initializeAppSync();
 
-            let countMastered = 0;
-            let countReviewing = 0;
-            let countStruggles = 0;
-            let countUnstudied = 0;
-            let dueCount = 0;
+        function parseSheetDatabase(text) {
+            const lines = text.split('\n');
+            for(let i = 1; i < lines.length; i++) {
+                if(!lines[i].trim()) continue;
+                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+                if(!cols[0]) continue;
 
+                const chinese = cols[0];
+                const english = cols[1] ? cols[1] : cols[3];
+                const pinyin = cols[2] ? cols[2] : cols[4];
+
+                const c2eScore = cols[5] && !isNaN(cols[5]) ? parseInt(cols[5]) : 0;
+                const e2cScore = cols[6] && !isNaN(cols[6]) ? parseInt(cols[6]) : 0;
+                const c2eCount = cols[7] && !isNaN(cols[7]) ? parseInt(cols[7]) : 0;
+                const e2cCount = cols[8] && !isNaN(cols[8]) ? parseInt(cols[8]) : 0;
+                
+                const c2eTime = cols[9] && cols[9] !== "" ? new Date(cols[9]) : null;
+                const e2cTime = cols[10] && cols[10] !== "" ? new Date(cols[10]) : null;
+
+                masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
+                masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
+            }
+        }
+
+        function compileDashboardMetrics() {
             const now = new Date();
+            let naturalReviewsDue = 0;
+            let unviewedCount = 0;
+            let lv5 = 0, mid = 0, lv1 = 0;
+            
+            activeQueue = [];
+            let poolOfNotDueCards = [];
+            let studiedTodayCount = 0;
 
-            for (let i = 1; i < dataMatrix.length; i++) {
-                const row = dataMatrix[i];
-                if (!row || row.length < 5 || !row[0].trim()) continue;
+            const todayString = now.toDateString();
 
-                // PERFECTED CONFIGURATION MATRIX ALIGNMENT
-                const cardRef = {
-                    chinese: row[0].trim(),
-                    english: row[1] ? row[1].trim() : (row[3] ? row[3].trim() : ""),
-                    pinyin: row[2] ? row[2].trim() : (row[4] ? row[4].trim() : ""),
-                    pos: row[3] ? row[3].trim() : "",
-                    notes: row[4] ? row[4].trim() : "",
-                    c2e: {
-                        score: Number(row[5]) || 0,     // F
-                        count: Number(row[7]) || 0,     // H
-                        lastTime: row[9] ? new Date(row[9]) : null // J
-                    },
-                    e2c: {
-                        score: Number(row[6]) || 0,     // G
-                        count: Number(row[8]) || 0,     // I
-                        lastTime: row[10] ? new Date(row[10]) : null // K
-                    }
-                };
+            masterDeck.forEach(card => {
+                let averageScore = card.count > 0 ? (card.score / card.count) : 0;
 
-                ['CN_TO_EN', 'EN_TO_CN'].forEach(type => {
-                    const tracking = type === 'CN_TO_EN' ? cardRef.c2e : cardRef.e2c;
-                    
-                    let intervalDays = 0.003; 
-                    if (tracking.count > 0) {
-                        const calculatedAverage = tracking.score / tracking.count;
-                        const roundedScore = Math.max(1, Math.min(5, Math.round(calculatedAverage)));
-                        
-                        if (roundedScore <= 2) intervalDays = 0.003;
-                        else if (roundedScore === 3) intervalDays = 2;
-                        else if (roundedScore === 4) intervalDays = 7;
-                        else if (roundedScore === 5) intervalDays = 18;
+                if (card.lastTime && card.lastTime.toDateString() === todayString) {
+                    studiedTodayCount++;
+                }
 
-                        if (calculatedAverage >= 4.5) countMastered++;
-                        else if (calculatedAverage >= 2.5) countReviewing++;
-                        else countStruggles++;
+                if (card.count === 0) unviewedCount++;
+                else if (averageScore >= 4.5) lv5++;
+                else if (averageScore >= 2.5) mid++;
+                else lv1++;
+
+                if (card.count === 0) {
+                    card.urgency = 100;
+                    activeQueue.push(card);
+                    naturalReviewsDue++;
+                } else {
+                    let computedIntervalDays = 0;
+                    let roundedPerformanceLevel = Math.round(averageScore);
+
+                    if (roundedPerformanceLevel <= 2) computedIntervalDays = 0.003; 
+                    else if (roundedPerformanceLevel === 3) computedIntervalDays = 2; 
+                    else if (roundedPerformanceLevel === 4) computedIntervalDays = 7;
+                    else computedIntervalDays = 18; 
+
+                    const daysElapsed = (now - card.lastTime) / (1000 * 60 * 60 * 24);
+                    const minutesElapsed = daysElapsed * 24 * 60;
+
+                    if (averageScore >= 4.5 && minutesElapsed < 5) return;
+
+                    card.urgency = daysElapsed / (computedIntervalDays || 0.003);
+
+                    if (daysElapsed >= computedIntervalDays) {
+                        activeQueue.push(card);
+                        if (card.score > 0) naturalReviewsDue++;
                     } else {
-                        countUnstudied++;
+                        poolOfNotDueCards.push(card);
                     }
+                }
+            });
 
-                    let isDue = false;
-                    let urgencyValue = 0;
-
-                    if (!tracking.lastTime || tracking.count === 0) {
-                        isDue = true; 
-                        urgencyValue = 100.0;
-                    } else {
-                        const elapsedMs = now - tracking.lastTime;
-                        const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
-                        urgencyValue = elapsedDays / intervalDays;
-                        if (urgencyValue >= 1.0) isDue = true;
-                    }
-
-                    const individualInstance = {
-                        chinese: cardRef.chinese,
-                        pinyin: cardRef.pinyin,
-                        english: cardRef.english,
-                        pos: cardRef.pos,
-                        notes: cardRef.notes,
-                        type: type,
-                        score: tracking.score,
-                        count: tracking.count,
-                        lastTime: tracking.lastTime,
-                        urgency: urgencyValue,
-                        isDueNow: isDue
-                    };
-
-                    masterDeck.push(individualInstance);
-                    if (isDue) dueCount++;
-                });
+            if (studiedTodayCount === 0 && activeQueue.length < 30 && masterDeck.length > 0) {
+                poolOfNotDueCards.sort((a, b) => b.urgency - a.urgency);
+                while (activeQueue.length < 30 && poolOfNotDueCards.length > 0) {
+                    activeQueue.push(poolOfNotDueCards.shift());
+                }
             }
 
-            const badgeNode = document.getElementById('hero-count-badge');
-            const titleNode = document.getElementById('hero-card-title');
-            const subtitleNode = document.getElementById('hero-card-subtitle');
-            const primaryBtn = document.getElementById('btn-start-due');
+            // EN_TO_CN PRODUCTION BIAS SORT MODIFIER
+            activeQueue.sort((a, b) => {
+                let scoreA = a.urgency + (a.type === 'EN_TO_CN' ? 0.01 : 0);
+                let scoreB = b.urgency + (b.type === 'EN_TO_CN' ? 0.01 : 0);
+                return scoreB - scoreA;
+            });
 
-            badgeNode.innerText = dueCount;
-            
-            if (dueCount > 0) {
-                badgeNode.classList.remove('caught-up');
-                titleNode.innerText = "Cards Due Now";
-                subtitleNode.innerText = "Ready to build deep retrieval strength?";
-                primaryBtn.disabled = false;
-                primaryBtn.innerText = `Start Daily Review (${dueCount} Cards)`;
-                primaryBtn.style.display = "block";
+            document.getElementById('stat-due').innerText = naturalReviewsDue;
+            document.getElementById('stat-new').innerText = unviewedCount;
+            document.getElementById('m-lv5').innerText = lv5;
+            document.getElementById('m-mid').innerText = mid;
+            document.getElementById('m-lv1').innerText = lv1;
+
+            const actionBtn = document.getElementById('action-btn');
+            if (activeQueue.length === 0) {
+                actionBtn.innerText = "Free Review";
+                actionBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
             } else {
-                badgeNode.innerText = "✓";
-                badgeNode.classList.add('caught-up');
-                titleNode.innerText = "All Caught Up!";
-                subtitleNode.innerText = "No due cards left. Try a random review to expand further.";
-                primaryBtn.disabled = true;
-                primaryBtn.style.display = "none";
+                actionBtn.innerText = "Start Session";
+                actionBtn.style.background = "linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)";
             }
-
-            document.getElementById('stat-mastered').innerText = countMastered;
-            document.getElementById('stat-reviewing').innerText = countReviewing;
-            document.getElementById('stat-struggles').innerText = countStruggles;
-            
-            document.getElementById('stat-unstudied-text').innerHTML = `📁 <strong>${countUnstudied}</strong> unique card configurations in your dictionary have not been introduced yet.`;
         }
 
-        function launchStudySession(requestedRandomReviewMode) {
-            isOverstudyMode = requestedRandomReviewMode;
-            historicalReviewStack = [];
-            wordHistoryBuffer = [];
-            updateUndoActionButtonUI();
-
-            if (isOverstudyMode) {
-                document.getElementById('session-mode-indicator').innerText = "Reviewing Random Cards";
-                activeQueue = [...masterDeck].sort(() => 0.5 - Math.random()).slice(0, 25);
-            } else {
-                document.getElementById('session-mode-indicator').innerText = "Daily Review Session";
-                activeQueue = masterDeck.filter(c => c.isDueNow).sort((x, y) => y.urgency - x.urgency);
-            }
-
-            if (activeQueue.length === 0) {
-                alert("No scheduled cards match this runtime parameters filter right now.");
-                return;
-            }
-
-            switchScreenContext('screen-study');
+        function startSession() {
+            isOverstudyMode = (activeQueue.length === 0);
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('study-space').style.display = 'flex';
             renderNextCardInstance();
         }
 
-        function renderNextCardInstance() {
-            const cardNode = document.getElementById('main-flashcard-node');
-            cardNode.classList.remove('flipped');
-            document.getElementById('grading-interface-block').style.visibility = 'hidden';
+        function exitToDashboard() {
+            userWantsToExit = true;
+            if (networkQueue.length > 0) {
+                document.getElementById('study-space').style.display = 'none';
+                document.getElementById('loading-screen').style.display = 'block';
+                updateSyncGateMessageUI();
+            } else {
+                initializeAppSync();
+            }
+        }
 
-            if (activeQueue.length === 0) {
-                completeSessionWrapPipeline();
+        function updateSyncGateMessageUI() {
+            if (userWantsToExit && networkQueue.length > 0) {
+                document.getElementById('loading-screen').innerHTML = `
+                    <div style="font-size:1.1rem; margin-bottom:8px;">Wrapping up your session...</div>
+                    <div style="font-size:0.85rem; color:var(--text-muted);">Syncing final reviews with the cloud (Remaining: ${networkQueue.length})</div>
+                `;
+            }
+        }
+
+        function renderNextCardInstance() {
+            if (activeQueue.length === 0 && !isOverstudyMode) {
+                exitToDashboard();
                 return;
             }
 
-            let chosenQueueIndex = 0;
-            if (activeQueue.length > 1 && wordHistoryBuffer.length > 0) {
-                for (let i = 0; i < activeQueue.length; i++) {
-                    if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
-                        chosenQueueIndex = i;
+            let card = null;
+            let selectedQueueIndex = 0;
+
+            if (isOverstudyMode) {
+                masterDeck.sort((a,b) => {
+                    if (a.score !== b.score) return a.score - b.score;
+                    if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
+                    return (a.count || 0) - (b.count || 0);
+                });
+                
+                for (let i = 0; i < masterDeck.length; i++) {
+                    if (!wordHistoryBuffer.includes(masterDeck[i].chinese)) {
+                        card = masterDeck[i];
                         break;
                     }
                 }
-            }
-
-            window.currentActiveIndexInQueue = chosenQueueIndex;
-            window.activeCard = activeQueue[chosenQueueIndex];
-
-            document.getElementById('session-counter').innerText = `${activeQueue.length} items left`;
-
-            if (window.activeCard.type === 'CN_TO_EN') {
-                cardNode.classList.remove('en-to-cn-mode');
-                document.getElementById('meta-card-direction').innerText = "Chinese → English";
-                document.getElementById('front-card-text').innerText = window.activeCard.chinese;
-                document.getElementById('front-card-text').classList.remove('small-eng');
+                if (!card) card = masterDeck[0];
+                document.getElementById('progress-counter').innerText = "Free Review";
             } else {
-                cardNode.classList.add('en-to-cn-mode');
-                document.getElementById('meta-card-direction').innerText = "English → Chinese";
-                document.getElementById('front-card-text').innerText = window.activeCard.english;
-                if (window.activeCard.english.length > 12) {
-                    document.getElementById('front-card-text').classList.add('small-eng');
-                } else {
-                    document.getElementById('front-card-text').classList.remove('small-eng');
+                for (let i = 0; i < activeQueue.length; i++) {
+                    if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
+                        card = activeQueue[i];
+                        selectedQueueIndex = i;
+                        break;
+                    }
                 }
+                if (!card) { card = activeQueue[0]; selectedQueueIndex = 0; }
+                document.getElementById('progress-counter').innerText = `${activeQueue.length} items left`;
             }
 
-            const backMain = document.getElementById('back-target-main');
-            if (window.activeCard.type === 'CN_TO_EN') {
-                backMain.innerText = window.activeCard.english;
-                if (window.activeCard.english.length > 14) backMain.classList.add('small-eng');
-                else backMain.classList.remove('small-eng');
+            window.activeCard = card;
+            window.currentActiveIndexInQueue = selectedQueueIndex;
+
+            document.getElementById('prompt-pane').classList.remove('revealed-state');
+            document.getElementById('answer-pane').classList.remove('revealed-state');
+            document.getElementById('back-display-sub').classList.remove('expanded-from-clue');
+            isRevealed = false;
+            clueWasActivated = false;
+
+            document.getElementById('clue-display-box').style.display = 'none';
+            document.getElementById('clue-trigger').style.display = 'none';
+
+            document.getElementById('tap-hint').style.display = 'block';
+            document.getElementById('grade-controls').style.display = 'none';
+            document.getElementById('undo-element').style.visibility = historicalReviewStack.length > 0 ? 'visible' : 'hidden';
+
+            const promptPane = document.getElementById('prompt-pane');
+            const frontText = document.getElementById('front-display-text');
+            const backText = document.getElementById('back-display-main');
+
+            if (card.type === 'CN_TO_EN') {
+                promptPane.className = "slide-pane cn-mode";
+                document.getElementById('front-pill-tag').innerText = "Recognition";
+                
+                const cnFrontLen = card.chinese.length;
+                if (cnFrontLen > 12) frontText.style.fontSize = "2.0rem";
+                else if (cnFrontLen > 6) frontText.style.fontSize = "2.6rem";
+                else frontText.style.fontSize = "3.2rem";
+                frontText.innerText = card.chinese;
+                
+                const enBackLen = card.english.length;
+                if (enBackLen > 90) backText.style.fontSize = "1.2rem";
+                else if (enBackLen > 50) backText.style.fontSize = "1.5rem";
+                else backText.style.fontSize = "2.0rem";
+                backText.innerText = card.english;
+                
+                document.getElementById('back-display-sub').innerText = card.pinyin;
             } else {
-                backMain.innerText = window.activeCard.chinese;
-                backMain.classList.remove('small-eng');
+                promptPane.className = "slide-pane en-mode";
+                document.getElementById('front-pill-tag').innerText = "Production";
+                
+                document.getElementById('clue-trigger').style.display = 'block';
+                
+                const enFrontLen = card.english.length;
+                if (enFrontLen > 90) frontText.style.fontSize = "1.2rem";
+                else if (enFrontLen > 50) frontText.style.fontSize = "1.5rem";
+                else if (enFrontLen > 25) frontText.style.fontSize = "2.0rem";
+                else frontText.style.fontSize = "2.6rem";
+                frontText.innerText = card.english;
+                
+                const cnBackLen = card.chinese.length;
+                if (cnBackLen > 12) backText.style.fontSize = "1.5rem";
+                else if (cnBackLen > 6) backText.style.fontSize = "1.9rem";
+                else backText.style.fontSize = "2.5rem";
+                backText.innerText = card.chinese;
+                
+                document.getElementById('back-display-sub').innerText = card.pinyin;
             }
-
-            document.getElementById('back-target-pinyin').innerText = window.activeCard.pinyin;
-            
-            let descriptiveNote = `[${window.activeCard.pos}]`;
-            if (window.activeCard.notes) descriptiveNote += ` — ${window.activeCard.notes}`;
-            document.getElementById('back-target-english').innerText = descriptiveNote;
-
-            const hintNode = document.getElementById('btn-hint-clue');
-            hintNode.innerText = "Tap for Pinyin Clue";
-            hintNode.style.opacity = "1";
-            hintNode.style.border = "1px dashed rgba(255,255,255,0.2)";
         }
 
-        function toggleCardFlipState() {
-            const cardNode = document.getElementById('main-flashcard-node');
-            cardNode.classList.toggle('flipped');
-
-            const isNowFlipped = cardNode.classList.contains('flipped');
-            document.getElementById('grading-interface-block').style.visibility = isNowFlipped ? 'visible' : 'hidden';
-        }
-
-        function executeRevealHint(event) {
+        function generatePinyinClue(event) {
             event.stopPropagation();
-            const hintNode = document.getElementById('btn-hint-clue');
+            if (clueWasActivated) return;
+
+            const pinyinString = window.activeCard.pinyin;
+            let computedClue = "";
+            const firstSpaceIndex = pinyinString.indexOf(' ');
             
-            if (window.activeCard.type === 'CN_TO_EN') {
-                hintNode.innerText = `Starts with: [ ${window.activeCard.pinyin.split(' ')[0]} ]`;
+            if (firstSpaceIndex !== -1) {
+                computedClue = pinyinString.substring(0, firstSpaceIndex);
             } else {
-                hintNode.innerText = `Structure length: ${window.activeCard.chinese.length} characters`;
+                const sliceBoundary = Math.max(2, Math.ceil(pinyinString.length * 0.3));
+                computedClue = pinyinString.substring(0, sliceBoundary);
             }
-            hintNode.style.opacity = "0.9";
-            hintNode.style.border = "1px solid var(--accent-primary)";
+
+            document.getElementById('clue-text-string').innerText = `${computedClue}...`;
+            document.getElementById('clue-display-box').style.display = 'block';
+            document.getElementById('clue-trigger').style.display = 'none';
+            clueWasActivated = true;
+        }
+
+        function executeRevealSlide() {
+            if (isRevealed) return;
+            
+            document.getElementById('clue-display-box').style.display = 'none';
+            document.getElementById('clue-trigger').style.display = 'none';
+
+            if (clueWasActivated) {
+                document.getElementById('back-display-sub').classList.add('expanded-from-clue');
+            }
+
+            const frontText = document.getElementById('front-display-text');
+            if (window.activeCard.type === 'EN_TO_CN' && window.activeCard.english.length > 60) {
+                frontText.style.setProperty('font-size', '1.05rem', 'important');
+            }
+
+            document.getElementById('prompt-pane').classList.add('revealed-state');
+            document.getElementById('answer-pane').classList.add('revealed-state');
+            
+            isRevealed = true;
+            document.getElementById('tap-hint').style.display = 'none';
+            document.getElementById('grade-controls').style.display = 'grid';
         }
 
         function submitPerformanceRating(scoreDelta) {
             const card = window.activeCard;
-
+            
             historicalReviewStack.push({
                 cardObject: card,
                 ratingDeltaApplied: scoreDelta,
@@ -940,37 +759,13 @@
 
             wordHistoryBuffer.push(card.chinese);
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
-
-            if (!isOverstudyMode) {
-                activeQueue.splice(window.currentActiveIndexInQueue, 1);
-            }
+            if (!isOverstudyMode) activeQueue.splice(window.currentActiveIndexInQueue, 1);
 
             card.score += scoreDelta;
             card.count += 1;
             card.lastTime = new Date();
+
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
-
-            if (!isOverstudyMode) {
-                if (scoreDelta === 1) {
-                    const firstReinsertIndex = Math.min(2, activeQueue.length);
-                    activeQueue.splice(firstReinsertIndex, 0, { ...card });
-                    
-                    const secondReinsertIndex = Math.min(7, activeQueue.length);
-                    activeQueue.splice(secondReinsertIndex, 0, { ...card });
-                } 
-                else if (scoreDelta === 2 || scoreDelta === 3) {
-                    const reinsertIndex = Math.min(4, activeQueue.length);
-                    activeQueue.splice(reinsertIndex, 0, { ...card });
-                } 
-                else if (scoreDelta === 4) {
-                    const reinsertIndex = Math.min(9, activeQueue.length);
-                    activeQueue.splice(reinsertIndex, 0, { ...card });
-                }
-            } else {
-                activeQueue.splice(window.currentActiveIndexInQueue, 1);
-            }
-
-            updateUndoActionButtonUI();
             renderNextCardInstance();
         }
 
@@ -979,7 +774,7 @@
             
             historicalReviewStack.push({
                 cardObject: card,
-                ratingDeltaApplied: 5, 
+                ratingDeltaApplied: 4,
                 previousScore: card.score,
                 previousCount: card.count,
                 previousLastTime: card.lastTime,
@@ -989,97 +784,65 @@
 
             wordHistoryBuffer.push(card.chinese);
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
+            
+            if (!isOverstudyMode) {
+                activeQueue.splice(window.currentActiveIndexInQueue, 1);
+            }
 
-            activeQueue.splice(window.currentActiveIndexInQueue, 1);
-
-            card.score += 5;
+            card.score += 4;
             card.count += 1;
             card.lastTime = new Date();
-            enqueueNetworkPayload({ word: card.chinese, type: card.type, score: 5 });
+
+            enqueueNetworkPayload({ word: card.chinese, type: card.type, score: 4 });
 
             const reinsertIndex = Math.min(3, activeQueue.length);
-            activeQueue.splice(reinsertIndex, 0, { ...card });
+            const clonedCardInstance = { ...card };
+            
+            if (isOverstudyMode) {
+                activeQueue.push(clonedCardInstance); 
+            } else {
+                activeQueue.splice(reinsertIndex, 0, clonedCardInstance);
+            }
 
-            updateUndoActionButtonUI();
             renderNextCardInstance();
         }
 
-        function updateUndoActionButtonUI() {
-            const btn = document.getElementById('btn-global-undo');
-            if (historicalReviewStack.length > 0) {
-                btn.style.opacity = "1";
-                btn.style.cursor = "pointer";
-                btn.disabled = false;
-            } else {
-                btn.style.opacity = "0.4";
-                btn.style.cursor = "not-allowed";
-                btn.disabled = true;
-            }
-        }
-
-        function executeHistoricalUndoStep() {
+        function triggerUndo() {
             if (historicalReviewStack.length === 0) return;
+            const logEntry = historicalReviewStack.pop();
+            const card = logEntry.cardObject;
 
-            const lastActionFrame = historicalReviewStack.pop();
-            const card = lastActionFrame.cardObject;
+            const bufferIdx = wordHistoryBuffer.lastIndexOf(card.chinese);
+            if(bufferIdx !== -1) wordHistoryBuffer.splice(bufferIdx, 1);
 
-            card.score = lastActionFrame.previousScore;
-            card.count = lastActionFrame.previousCount;
-            card.lastTime = lastActionFrame.previousLastTime;
-
-            enqueueNetworkPayload({
-                word: card.chinese,
-                type: card.type,
-                score: lastActionFrame.ratingDeltaApplied,
-                rollbackDecrement: true, 
-                previousLastTime: lastActionFrame.previousLastTime ? lastActionFrame.previousLastTime.toISOString() : "" 
+            enqueueNetworkPayload({ 
+                word: card.chinese, 
+                type: card.type, 
+                score: logEntry.ratingDeltaApplied, 
+                rollbackDecrement: true,
+                previousLastTime: logEntry.previousLastTime ? logEntry.previousLastTime.toISOString() : ""
             });
 
-            if (lastActionFrame.wasInQueue) {
-                activeQueue = activeQueue.filter(q => !(q.chinese === card.chinese && q.type === card.type));
-                activeQueue.splice(lastActionFrame.queuePosition, 0, card);
-            } else {
-                activeQueue.splice(lastActionFrame.queuePosition, 0, card);
-            }
-
-            if (wordHistoryBuffer.length > 0) wordHistoryBuffer.pop();
-
-            updateUndoActionButtonUI();
+            card.score = logEntry.previousScore; 
+            card.count = logEntry.previousCount; 
+            card.lastTime = logEntry.previousLastTime;
+            
+            if (logEntry.wasInQueue) activeQueue.splice(logEntry.queuePosition, 0, card);
+            if(activeQueue.length > 0) isOverstudyMode = false;
             renderNextCardInstance();
-        }
-
-        function abortSessionAndReturnHome() {
-            if (networkQueue.length > 0) {
-                const confirmExit = confirm("You have background sync payloads processing. Exit anyway and let updates upload in the background?");
-                if (!confirmExit) return;
-            }
-            userWantsToExit = true;
-            initializeAppSync();
-        }
-
-        function completeSessionWrapPipeline() {
-            alert("Excellent! You've completely cleared this flashcard work queue layout cycle.");
-            userWantsToExit = true;
-            initializeAppSync();
         }
 
         function enqueueNetworkPayload(payload) {
             networkQueue.push(payload);
             updateNetworkToastUI();
-            
-            if (!isProcessingNetworkQueue) {
-                processNetworkPipeline();
-            }
+            updateSyncGateMessageUI();
+            processNetworkPipeline();
         }
 
         function processNetworkPipeline() {
-            if (networkQueue.length === 0) {
-                isProcessingNetworkQueue = false;
-                updateNetworkToastUI();
-                return;
-            }
-
+            if (isProcessingNetworkQueue || networkQueue.length === 0) return;
             isProcessingNetworkQueue = true;
+
             const dynamicPayload = networkQueue[0];
             updateNetworkToastUI();
 
@@ -1096,11 +859,11 @@
                 if (userWantsToExit && networkQueue.length === 0) {
                     initializeAppSync();
                 } else {
+                    updateSyncGateMessageUI();
                     processNetworkPipeline();
                 }
             })
-            .catch((err) => {
-                console.error("Network write fault detected. Retrying pipeline synchronization block in 4s...", err);
+            .catch(() => {
                 setTimeout(() => {
                     isProcessingNetworkQueue = false;
                     processNetworkPipeline();
@@ -1115,12 +878,11 @@
             if (networkQueue.length === 0 || userWantsToExit) {
                 toastNode.style.display = 'none';
             } else {
-                toastNode.style.display = 'flex';
-                badgeNode.style.display = networkQueue.length > 1 ? 'inline-flex' : 'none';
+                toastNode.style.display = 'block';
+                badgeNode.style.display = networkQueue.length > 1 ? 'inline-block' : 'none';
                 badgeNode.innerText = networkQueue.length;
             }
         }
     </script>
 </body>
 </html>
-
