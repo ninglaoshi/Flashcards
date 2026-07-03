@@ -645,21 +645,25 @@
         }
 
         function renderNextCardInstance() {
-            // BACKFILL PROTECTION LOOP FOR EXHAUSTED QUEUES
-            if (activeQueue.length === 0) {
-                if (!isOverstudyMode) {
-                    const safeFillers = masterDeck.filter(c => c.chinese !== window.activeCard?.chinese);
-                    for(let i = 0; i < Math.min(5, safeFillers.length); i++) {
-                        let randomCard = safeFillers[Math.floor(Math.random() * safeFillers.length)];
-                        activeQueue.push({ ...randomCard });
-                    }
-                }
-                
-                if (activeQueue.length === 0) {
-                    exitToDashboard();
-                    return;
-                }
+    // BACKFILL PROTECTION LOOP FOR EXHAUSTED QUEUES
+    if (activeQueue.length === 0) {
+        // Only inject random filler cards if we are in a normal session and running out of cards to space out pending loops
+        if (!isOverstudyMode) {
+            const safeFillers = masterDeck.filter(c => c.chinese !== window.activeCard?.chinese);
+            for(let i = 0; i < Math.min(5, safeFillers.length); i++) {
+                let randomCard = safeFillers[Math.floor(Math.random() * safeFillers.length)];
+                activeQueue.push({ ...randomCard });
             }
+            
+            // If still absolutely empty with no fillers possible in normal mode, escape to home dashboard
+            if (activeQueue.length === 0) {
+                exitToDashboard();
+                return;
+            }
+        }
+        // If we are in Free Review mode (isOverstudyMode === true), we do NOT exit here. 
+        // We let it fall through to the masterDeck sorting logic below!
+    }
 
             let card = null;
             let selectedQueueIndex = 0;
