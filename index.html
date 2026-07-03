@@ -288,7 +288,7 @@
         }
 
         /* CONTROLS */
-        .controls-wrapper { width: 100%; min-height: 100px; }
+        .controls-wrapper { width: 100%; min-height: 140px; }
         .hint-banner { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 15px; margin-top: 10px; }
         
         .grading-grid {
@@ -422,11 +422,12 @@
                 <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Guessed</button>
                 <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Had to Think</button>
                 <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it</button>
+                <button class="grad-btn" onclick="triggerWritingRequeueLoop()" style="background:#4b5563; grid-column: span 5; height: 50px; margin-top: 6px; font-size: 0.75rem;"><span>✍️</span>Review Writing (See Again This Session)</button>
             </div>
         </div>
     </div>
 
-    <script>
+    <script {nonce}>
         const READ_URL = `https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv`;
         const WRITE_URL = `https://script.google.com/macros/s/AKfycby3StwOXowIZlnjKHKjDVls8sxtOE2qBi9vWgm21R7z9gUCJofLMrbsSX06QAwlkP_GaA/exec`;
 
@@ -554,7 +555,6 @@
             }
 
             // EN_TO_CN PRODUCTION BIAS SORT MODIFIER
-            // Give EN_TO_CN elements an artificial urgency bump if urgency is otherwise tied
             activeQueue.sort((a, b) => {
                 let scoreA = a.urgency + (a.type === 'EN_TO_CN' ? 0.01 : 0);
                 let scoreB = b.urgency + (b.type === 'EN_TO_CN' ? 0.01 : 0);
@@ -614,7 +614,6 @@
             let selectedQueueIndex = 0;
 
             if (isOverstudyMode) {
-                // Keep Production First strategy intact during Free Review Mode by altering secondary sorts
                 masterDeck.sort((a,b) => {
                     if (a.score !== b.score) return a.score - b.score;
                     if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
@@ -767,6 +766,44 @@
             card.lastTime = new Date();
 
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
+            renderNextCardInstance();
+        }
+
+        function triggerWritingRequeueLoop() {
+            const card = window.activeCard;
+            
+            historicalReviewStack.push({
+                cardObject: card,
+                ratingDeltaApplied: 4,
+                previousScore: card.score,
+                previousCount: card.count,
+                previousLastTime: card.lastTime,
+                wasInQueue: !isOverstudyMode,
+                queuePosition: window.currentActiveIndexInQueue
+            });
+
+            wordHistoryBuffer.push(card.chinese);
+            if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
+            
+            if (!isOverstudyMode) {
+                activeQueue.splice(window.currentActiveIndexInQueue, 1);
+            }
+
+            card.score += 4;
+            card.count += 1;
+            card.lastTime = new Date();
+
+            enqueueNetworkPayload({ word: card.chinese, type: card.type, score: 4 });
+
+            const reinsertIndex = Math.min(3, activeQueue.length);
+            const clonedCardInstance = { ...card };
+            
+            if (isOverstudyMode) {
+                activeQueue.push(clonedCardInstance); 
+            } else {
+                activeQueue.splice(reinsertIndex, 0, clonedCardInstance);
+            }
+
             renderNextCardInstance();
         }
 
