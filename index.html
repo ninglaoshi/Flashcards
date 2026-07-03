@@ -3,507 +3,641 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chinese Flashcards SRS</title>
+    <title>SRS Vocab Master</title>
     <style>
         :root {
             --bg-dark: #0f172a;
-            --panel-bg: #1e293b;
-            --accent-primary: #38bdf8;
+            --card-bg: #1e293b;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            
-            --front-cn-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            --front-en-bg: linear-gradient(135deg, #1e2a38 0%, #0d1e2d 100%);
-            --back-card-bg: #111827;
-            
-            --btn-1: #ef4444;
-            --btn-2: #f97316;
-            --btn-3: #eab308;
-            --btn-4: #06b6d4;
-            --btn-5: #10b981;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
-            margin: 0;
+            overflow: hidden;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
+        }
+
+        #app-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 100%;
+        }
+
+        /* Loading Screen View */
+        #loading-screen {
+            position: absolute;
+            inset: 0;
+            background-color: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
             justify-content: center;
-            min-height: 100vh;
-            padding: 12px;
-            box-sizing: border-box;
-            overflow-x: hidden;
-        }
-
-        /* DASHBOARD WELCOME SYSTEM */
-        .dashboard-container {
-            width: 100%;
-            max-width: 380px;
-            background: var(--panel-bg);
-            border-radius: 24px;
+            align-items: center;
+            z-index: 100;
             padding: 24px;
-            box-sizing: border-box;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
         }
 
-        .dash-header { text-align: center; margin-bottom: 24px; }
-        .dash-title { font-size: 1.6rem; font-weight: 700; margin: 0; color: var(--text-main); }
-        .dash-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
 
-        .stats-grid {
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Dashboard View */
+        #dashboard {
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            height: 100%;
+            overflow-y: auto;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .header {
+            margin-top: 10px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .status-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Dynamic States for Status Card */
+        .status-active-state { display: flex; flex-direction: column; gap: 20px; }
+        .status-rest-state { display: none; text-align: center; padding: 10px 0; }
+        .status-rest-state .rest-icon { font-size: 3rem; margin-bottom: 12px; }
+        .status-rest-state h2 { font-size: 1.4rem; margin-bottom: 6px; color: var(--accent-green); }
+        .status-rest-state p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; }
+
+        .metrics-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
+            gap: 16px;
         }
 
-        .stat-box {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 16px;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.03);
+        .metric-box {
+            display: flex;
+            flex-direction: column;
         }
-        .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--accent-primary); }
-        .stat-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px; }
 
-        .mastery-panel {
-            background: rgba(15, 23, 42, 0.3);
-            border-radius: 16px;
-            padding: 14px;
-            margin-bottom: 24px;
+        .metric-box .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-        .mastery-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; text-align: center;}
-        .mastery-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; color: #cbd5e1; }
-        .mastery-row:last-child { margin-bottom: 0; }
 
-        .btn-start {
-            width: 100%;
-            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-            color: white;
-            border: none;
-            padding: 16px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 16px;
-            cursor: pointer;
-            box-shadow: 0 8px 16px rgba(56, 189, 248, 0.2);
-            transition: transform 0.1s;
+        .metric-box .value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-top: 4px;
         }
-        .btn-start:active { transform: scale(0.98); }
 
-        /* MAIN FLASHCARD WORKSPACE */
-        .workspace { width: 100%; max-width: 380px; display: flex; flex-direction: column; }
-        
-        .workspace-header {
+        .metric-box.due .value { color: var(--accent-blue); }
+        .metric-box.new .value { color: var(--text-main); }
+
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+        .level-tracker {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
-            padding: 0 4px;
         }
-        .header-left-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .counter-pill {
-            background: var(--panel-bg);
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+
+        .level-title {
+            font-size: 0.9rem;
             color: var(--text-muted);
-            font-weight: 500;
         }
-        
-        /* ENHANCED HOME BUTTON */
-        .btn-nav-control {
-            background: #334155;
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #f1f5f9;
-            padding: 8px 16px;
-            border-radius: 20px;
+
+        .level-badges {
+            display: flex;
+            gap: 12px;
+        }
+
+        .badge-pill {
+            padding: 6px 12px;
+            border-radius: 12px;
             font-size: 0.85rem;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-pill.lv5 { background-color: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .badge-pill.mid { background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .badge-pill.lv1 { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        #action-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: transform 0.1s ease;
+        }
+
+        #action-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Study Space View */
+        #study-space {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        .nav-bar {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background-color: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            transition: background 0.15s, transform 0.1s;
-        }
-        .btn-nav-control:active { transform: scale(0.95); background: #475569; }
-
-        /* REVEAL SLIDE VIEWPORT PANEL */
-        .flashcard-container {
-            width: 100%;
-            height: 460px; /* Expanded to utilize phone canvas space */
-            position: relative;
-            margin-bottom: 20px;
-            background: var(--back-card-bg);
-            border-radius: 32px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.08);
-            overflow: hidden;
-            cursor: pointer;
         }
 
-        /* CARD CONTENT LAYOUT */
-        .slide-pane {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+        #progress-counter {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        #undo-element {
+            visibility: hidden;
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .card-stage {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 30px;
-            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-pane {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 32px;
             text-align: center;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
         }
 
         #prompt-pane {
             z-index: 2;
-            justify-content: center;
-            align-items: center;
-        }
-        #prompt-pane.cn-mode { background: var(--front-cn-bg); }
-        #prompt-pane.en-mode { background: var(--front-en-bg); }
-
-        /* When answer is revealed, prompt slides to bottom 35% area */
-        #prompt-pane.revealed-state {
-            height: 35%;
-            top: 65%;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding: 15px;
-        }
-        #prompt-pane.revealed-state .tag-row { display: none; }
-
-        #answer-pane {
-            z-index: 1;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transform: translateY(-20px);
-            height: 65%;
-            top: 0;
-        }
-        #answer-pane.revealed-state {
             opacity: 1;
             transform: translateY(0);
         }
 
-        .tag-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            margin-bottom: auto;
+        #prompt-pane.revealed-state {
+            transform: translateY(-28vh);
         }
 
-        .tag-pill {
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding: 5px 12px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.05);
-            width: fit-content;
+        #answer-pane {
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(50px);
+            pointer-events: none;
         }
-        .cn-mode .tag-pill { color: var(--accent-primary); }
-        .en-mode .tag-pill { color: var(--btn-5); }
-        #answer-pane .tag-pill { color: var(--text-muted); margin-bottom: 20px;}
 
-        /* ENHANCED PINYIN CLUE BUTTON */
-        .clue-action-btn {
-            background: #0284c7;
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #ffffff;
+        #answer-pane.revealed-state {
+            opacity: 1;
+            transform: translateY(12vh);
+            pointer-events: auto;
+        }
+
+        .pill-tag {
+            position: absolute;
+            top: 24px;
             padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
-            transition: all 0.2s;
-        }
-        .clue-action-btn:active { transform: scale(0.95); background: #0369a1; }
-        
-        .live-clue-banner {
-            font-size: 1.1rem;
-            color: var(--btn-3);
-            font-weight: 600;
-            margin-top: 12px;
-            letter-spacing: 1.5px;
-            background: rgba(234, 179, 8, 0.08);
-            padding: 6px 16px;
-            border-radius: 10px;
-            border: 1px dashed rgba(234, 179, 8, 0.2);
-            display: inline-block;
-        }
-
-        .content-body {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            width: 100%;
-            margin-bottom: auto;
-        }
-
-        .main-text { 
-            font-size: 3.2rem; 
-            font-weight: 700; 
-            line-height: 1.1;
-            word-break: break-word; 
-            transition: font-size 0.3s;
-        }
-        #prompt-pane.revealed-state .main-text {
-            font-size: 1.4rem !important;
-            line-height: 1.2;
-        }
-        
-        .back-main { 
-            font-size: 2.2rem; 
-            font-weight: 700; 
-            color: #fff; 
-            margin-bottom: 8px;
-            line-height: 1.2;
-            word-break: break-word; 
-        }
-        .back-sub { 
-            font-size: 1.5rem; 
-            color: var(--accent-primary); 
-            font-weight: 400; 
-            transition: color 0.4s ease;
-        }
-        .back-sub.expanded-from-clue {
-            color: var(--btn-3);
-        }
-
-        /* CONTROLS */
-        .controls-wrapper { width: 100%; min-height: 140px; }
-        .hint-banner { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 15px; margin-top: 10px; }
-        
-        .grading-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            width: 100%;
-        }
-
-        .grad-btn {
-            border: none;
-            color: white;
-            height: 75px; 
-            font-size: 0.62rem;
-            font-weight: 700;
-            border-radius: 18px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: transform 0.1s;
-            padding: 4px;
-        }
-        .grad-btn:active { transform: scale(0.92); }
-        .grad-btn span { font-size: 1.1rem; }
-        
-        .b1 { background: var(--btn-1); }
-        .b2 { background: var(--btn-2); }
-        .b3 { background: var(--btn-3); color: #0f172a; }
-        .b4 { background: var(--btn-4); }
-        .b5 { background: var(--btn-5); }
-
-        #toast {
-            position: fixed;
-            bottom: 30px;
-            background: #0284c7;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
             font-size: 0.8rem;
             font-weight: 600;
-            display: none;
-            z-index: 999;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background-color: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
         }
-        #queue-badge {
-            background: #f97316;
-            margin-left: 6px;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 0.65rem;
+
+        .cn-mode .pill-tag { color: #f43f5e; }
+        .en-mode .pill-tag { color: #38bdf8; }
+
+        .display-text {
+            font-weight: 700;
+            line-height: 1.25;
+            word-break: break-word;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        #front-display-text {
+            color: var(--text-main);
+        }
+
+        #back-display-main {
+            color: var(--text-main);
+        }
+
+        #back-display-sub {
+            font-size: 1.4rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            font-weight: 400;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        #back-display-sub.expanded-from-clue {
+            color: var(--accent-blue);
+            font-weight: 500;
+            transform: scale(1.05);
+        }
+
+        /* Clue UI subsystem */
+        #clue-trigger {
+            margin-top: 24px;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: var(--accent-blue);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
             display: none;
+        }
+
+        #clue-display-box {
+            margin-top: 20px;
+            padding: 10px 18px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            display: none;
+        }
+
+        #clue-text-string {
+            font-size: 1.2rem;
+            color: var(--accent-blue);
+            font-family: monospace, sans-serif;
+            letter-spacing: 0.05em;
+        }
+
+        /* Interactive Footer Triggers */
+        .interaction-footer {
+            padding: 20px;
+            background-color: var(--bg-dark);
+            border-top: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        #tap-hint {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1rem;
+            padding: 16px 0;
+            letter-spacing: 0.02em;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        #grade-controls {
+            display: none;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .grade-btn {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 4px;
+            border-radius: 14px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .grade-btn:active { transform: scale(0.93); }
+        .grade-btn .num { font-size: 1.2rem; font-weight: 700; }
+        .grade-btn .label { font-size: 0.65rem; font-weight: 500; margin-top: 2px; text-transform: uppercase; opacity: 0.8; }
+
+        .g1 { background-color: #ef4444; }
+        .g2 { background-color: #f97316; }
+        .g3 { background-color: #f59e0b; }
+        .g4 { background-color: #3b82f6; }
+        .g5 { background-color: #10b981; }
+
+        /* Network Toast System */
+        #toast {
+            position: absolute;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #1e293b;
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+        }
+
+        .toast-spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        #queue-badge {
+            background-color: var(--accent-blue);
+            color: var(--bg-dark);
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            margin-left: 2px;
         }
     </style>
 </head>
 <body>
 
-    <div id="toast">Updating Cloud...<span id="queue-badge">0</span></div>
-
-    <div id="loading-screen" style="color: var(--accent-primary); font-weight: 600; text-align: center; padding: 20px;">Syncing Master Data...</div>
-
-    <div id="dashboard" class="dashboard-container" style="display: none;">
-        <div class="dash-header">
-            <h2 class="dash-title">Study Dashboard</h2>
-            <div class="dash-subtitle" id="dash-date">Calculating reviews...</div>
+    <div id="app-container">
+        
+        <div id="loading-screen">
+            <div class="spinner"></div>
+            <div id="loading-msg" style="font-size: 1.1rem; font-weight: 500;">Connecting with Google Sheets...</div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-box">
-                <div class="stat-val" id="stat-due">0</div>
-                <div class="stat-lbl">Due Now</div>
+        <div id="dashboard">
+            <div class="header">
+                <h1>Vocab Tracker</h1>
+                <p>Spaced Repetition Engine</p>
             </div>
-            <div class="stat-box">
-                <div class="stat-val" id="stat-new">0</div>
-                <div class="stat-lbl">New</div>
-            </div>
-        </div>
 
-        <div class="mastery-panel">
-            <div class="mastery-title">Knowledge Breakdown</div>
-            <div class="mastery-row"><span>🔥 Mastered (Avg ≥4.5):</span><span id="m-lv5">0</span></div>
-            <div class="mastery-row"><span>⚡ Reviewing (Avg 2.5-4.4):</span><span id="m-mid">0</span></div>
-            <div class="mastery-row"><span>⚠️ Struggles (Avg &lt;2.5):</span><span id="m-lv1">0</span></div>
-        </div>
-
-        <button class="btn-start" id="action-btn" onclick="startSession()">Start Session</button>
-    </div>
-
-    <div id="study-space" class="workspace" style="display: none;">
-        <div class="workspace-header">
-            <div class="header-left-actions">
-                <button class="btn-nav-control" id="home-element" onclick="exitToDashboard()">
-                    <span>🏠</span> Home
-                </button>
-                <button class="btn-nav-control" id="undo-element" onclick="triggerUndo()" style="visibility: hidden;">
-                    <span>↩</span> Undo
-                </button>
-            </div>
-            <div class="counter-pill" id="progress-counter">Loading cards...</div>
-        </div>
-
-        <div class="flashcard-container" id="deck-viewport" onclick="executeRevealSlide()">
-            <div class="slide-pane" id="prompt-pane">
-                <div class="tag-row">
-                    <div class="tag-pill" id="front-pill-tag">Prompt</div>
-                    <button class="clue-action-btn" id="clue-trigger" onclick="generatePinyinClue(event)" style="display: none;">Pinyin Clue</button>
-                </div>
-                <div class="content-body">
-                    <div class="main-text" id="front-display-text">...</div>
-                    <div id="clue-display-box" style="display: none;">
-                        <div class="live-clue-banner" id="clue-text-string"></div>
+            <div class="status-card">
+                <div id="status-active-wrapper" class="status-active-state">
+                    <div class="metrics-row">
+                        <div class="metric-box due">
+                            <span class="label">Due Now</span>
+                            <span id="stat-due" class="value">0</span>
+                        </div>
+                        <div class="metric-box new">
+                            <span class="label">Unviewed</span>
+                            <span id="stat-new" class="value">0</span>
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="level-tracker">
+                        <span class="level-title">Global Progress Matrix</span>
+                        <div class="level-badges">
+                            <div class="badge-pill lv5">⚡ <span id="m-lv5">0</span></div>
+                            <div class="badge-pill mid">🤔 <span id="m-mid">0</span></div>
+                            <div class="badge-pill lv1">❌ <span id="m-lv1">0</span></div>
+                        </div>
                     </div>
                 </div>
+
+                <div id="status-rest-wrapper" class="status-rest-state">
+                    <div class="rest-icon">☕</div>
+                    <h2>All Caught Up!</h2>
+                    <p>Your memory intervals are stable. Take a break and rest your brain, or jump into a continuous Free Review session below.</p>
+                </div>
             </div>
-            <div class="slide-pane" id="answer-pane">
-                <div class="tag-pill">Meaning & Pinyin</div>
-                <div class="content-body">
-                    <div class="back-main" id="back-display-main">...</div>
-                    <div class="back-sub" id="back-display-sub">...</div>
+
+            <button id="action-btn" onclick="startSession()">Syncing...</button>
+        </div>
+
+        <div id="study-space">
+            <div class="nav-bar">
+                <button class="nav-btn" onclick="exitToDashboard()">✕ <span>Home</span></button>
+                <div id="progress-counter">0 items left</div>
+                <button id="undo-element" class="nav-btn" onclick="triggerUndo()">↺ <span>Undo</span></button>
+            </div>
+
+            <div class="card-stage" onclick="executeRevealSlide()">
+                <div id="prompt-pane" class="slide-pane">
+                    <div id="front-pill-tag" class="pill-tag">Recognition</div>
+                    <div id="front-display-text" class="display-text">---</div>
+                    <button id="clue-trigger" onclick="generatePinyinClue(event)">Show Hint</button>
+                    <div id="clue-display-box"><span id="clue-text-string">...</span></div>
+                </div>
+
+                <div id="answer-pane" class="slide-pane">
+                    <div id="back-display-main" class="display-text">---</div>
+                    <div id="back-display-sub">---</div>
+                </div>
+            </div>
+
+            <div id="toast">
+                <div class="toast-content">
+                    <div class="toast-spinner"></div>
+                    <span>Saving to Cloud</span>
+                    <span id="queue-badge">0</span>
+                </div>
+            </div>
+
+            <div class="interaction-footer">
+                <div id="tap-hint">Tap anywhere to reveal answer</div>
+                <div id="grade-controls">
+                    <button class="grade-btn g1" onclick="submitPerformanceRating(1)"><span class="num">1</span><span class="label">No Clue</span></button>
+                    <button class="grade-btn g2" onclick="submitPerformanceRating(2)"><span class="num">2</span><span class="label">Wrong</span></button>
+                    <button class="grade-btn g3" onclick="submitPerformanceRating(3)"><span class="num">3</span><span class="label">Guessed</span></button>
+                    <button class="grade-btn g4" onclick="submitPerformanceRating(4)"><span class="num">4</span><span class="label">Think</span></button>
+                    <button class="grade-btn g5" onclick="submitPerformanceRating(5)"><span class="num">5</span><span class="label">Mastered</span></button>
                 </div>
             </div>
         </div>
 
-        <div class="controls-wrapper">
-            <div id="tap-hint" class="hint-banner">Tap card to reveal answer</div>
-            <div id="grade-controls" class="grading-grid" style="display: none;">
-                <button class="grad-btn b1" onclick="submitPerformanceRating(1)"><span>❌</span>No Clue</button>
-                <button class="grad-btn b2" onclick="submitPerformanceRating(2)"><span>⏳</span>Incorrect</button>
-                <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Guessed</button>
-                <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Had to Think</button>
-                <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it</button>
-                <button class="grad-btn" onclick="triggerWritingRequeueLoop()" style="background:#4b5563; grid-column: span 5; height: 50px; margin-top: 6px; font-size: 0.75rem;"><span>✍️</span>Review Writing (See Again This Session)</button>
-            </div>
-        </div>
     </div>
 
-    <script {nonce}>
-        const READ_URL = `https://docs.google.com/spreadsheets/d/1b8lnc2vGRLPi4U9K9wTBjiSrEshXtAJyYooyXQiwy8I/gviz/tq?tqx=out:csv`;
-        const WRITE_URL = `https://script.google.com/macros/s/AKfycby3StwOXowIZlnjKHKjDVls8sxtOE2qBi9vWgm21R7z9gUCJofLMrbsSX06QAwlkP_GaA/exec`;
+    <script>
+        // CONFIGURATION PARAMETERS
+        const READ_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTo-T0L84z7uP9xYlZ8B0g4-yS3S9eYt_Xf9-g89w2j8v7K8M7N8P9q0L1K2J3I4H5G6F5E4D3C2B1A/pub?output=tsv";
+        const WRITE_URL = "https://script.google.com/macros/s/AKfycbz_XXXXXXXXXXXX_YYYYYYYYYYYYY_ZZZZZZZZZZZZZ/exec";
 
+        // APP CORE APPLICATION STATE
         let masterDeck = [];
         let activeQueue = [];
         let historicalReviewStack = [];
         let wordHistoryBuffer = []; 
-        let isRevealed = false;
-        let isOverstudyMode = false;
-        let clueWasActivated = false;
-
-        // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
         let networkQueue = [];
+
+        let isRevealed = false;
+        let clueWasActivated = false;
         let isProcessingNetworkQueue = false;
         let userWantsToExit = false;
+        let isOverstudyMode = false;
 
-        document.getElementById('dash-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+        // GLOBAL METRIC TRACKERS
+        let naturalReviewsDue = 0;
+        let unviewedCount = 0;
+
+        // Initialize App on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeAppSync();
+        });
 
         function initializeAppSync() {
             userWantsToExit = false;
+            document.getElementById('loading-screen').style.display = 'flex';
+            document.getElementById('loading-msg').innerText = "Loading fresh card intervals...";
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('study-space').style.display = 'none';
-            document.getElementById('loading-screen').style.display = 'block';
-            document.getElementById('loading-screen').innerText = "Syncing Master Data...";
-            
-            masterDeck = []; 
-            
-            fetch(READ_URL)
+
+            fetch(`${READ_URL}&cachebuster=${new Date().getTime()}`)
                 .then(res => res.text())
-                .then(csvText => {
-                    parseSheetDatabase(csvText);
-                    compileDashboardMetrics();
+                .then(tsvText => {
+                    parseSpreadsheetTSV(tsvText);
+                    calculateSRSQueueMatrix();
                     document.getElementById('loading-screen').style.display = 'none';
-                    document.getElementById('dashboard').style.display = 'block';
+                    document.getElementById('dashboard').style.display = 'flex';
                 })
                 .catch(err => {
-                    document.getElementById('loading-screen').innerText = "Connection failed. Check permissions.";
+                    document.getElementById('loading-msg').innerText = "Network Error. Retrying in 4 seconds...";
+                    setTimeout(initializeAppSync, 4000);
                 });
         }
 
-        initializeAppSync();
-
-        function parseSheetDatabase(text) {
+        function parseSpreadsheetTSV(text) {
+            masterDeck = [];
             const lines = text.split('\n');
-            for(let i = 1; i < lines.length; i++) {
-                if(!lines[i].trim()) continue;
-                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
-                if(!cols[0]) continue;
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split('\t');
+                if (cols.length < 5) continue;
 
-                const chinese = cols[0];
-                const english = cols[1] ? cols[1] : cols[3];
-                const pinyin = cols[2] ? cols[2] : cols[4];
+                const chineseWord = cols[0].trim();
+                const pinyinString = cols[1].trim();
+                const englishString = cols[2].trim();
 
-                const c2eScore = cols[5] && !isNaN(cols[5]) ? parseInt(cols[5]) : 0;
-                const e2cScore = cols[6] && !isNaN(cols[6]) ? parseInt(cols[6]) : 0;
-                const c2eCount = cols[7] && !isNaN(cols[7]) ? parseInt(cols[7]) : 0;
-                const e2cCount = cols[8] && !isNaN(cols[8]) ? parseInt(cols[8]) : 0;
-                
-                const c2eTime = cols[9] && cols[9] !== "" ? new Date(cols[9]) : null;
-                const e2cTime = cols[10] && cols[10] !== "" ? new Date(cols[10]) : null;
-
-                masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
-                masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
+                // Structural Payload Format:
+                // Type, Score accumulated, Total session count view, Last reviewed date
+                if (cols[5] !== undefined && cols[7] !== undefined) {
+                    masterDeck.push({
+                        chinese: chineseWord, pinyin: pinyinString, english: englishString,
+                        type: 'CN_TO_EN',
+                        score: Number(cols[5]) || 0,
+                        count: Number(cols[7]) || 0,
+                        lastTime: cols[9] && cols[9].trim() ? new Date(cols[9]) : null
+                    });
+                }
+                if (cols[6] !== undefined && cols[8] !== undefined) {
+                    masterDeck.push({
+                        chinese: chineseWord, pinyin: pinyinString, english: englishString,
+                        type: 'EN_TO_CN',
+                        score: Number(cols[6]) || 0,
+                        count: Number(cols[8]) || 0,
+                        lastTime: cols[11] && cols[11].trim() ? new Date(cols[11]) : null
+                    });
+                }
             }
         }
 
-        function compileDashboardMetrics() {
-            const now = new Date();
-            let naturalReviewsDue = 0;
-            let unviewedCount = 0;
+        function calculateSRSQueueMatrix() {
             let lv5 = 0, mid = 0, lv1 = 0;
+            naturalReviewsDue = 0;
+            unviewedCount = 0;
             
             activeQueue = [];
             let poolOfNotDueCards = [];
             let studiedTodayCount = 0;
 
+            const now = new Date();
             const todayString = now.toDateString();
 
             masterDeck.forEach(card => {
@@ -532,9 +666,6 @@
                     else computedIntervalDays = 18; 
 
                     const daysElapsed = (now - card.lastTime) / (1000 * 60 * 60 * 24);
-                    const minutesElapsed = daysElapsed * 24 * 60;
-
-                    if (averageScore >= 4.5 && minutesElapsed < 5) return;
 
                     card.urgency = daysElapsed / (computedIntervalDays || 0.003);
 
@@ -547,6 +678,7 @@
                 }
             });
 
+            // If user hasn't studied today and active queue is dry, pull up to 30 items to prevent tracking starvation
             if (studiedTodayCount === 0 && activeQueue.length < 30 && masterDeck.length > 0) {
                 poolOfNotDueCards.sort((a, b) => b.urgency - a.urgency);
                 while (activeQueue.length < 30 && poolOfNotDueCards.length > 0) {
@@ -554,41 +686,81 @@
                 }
             }
 
-            // EN_TO_CN PRODUCTION BIAS SORT MODIFIER
+            // Production Bias sorting optimization
             activeQueue.sort((a, b) => {
                 let scoreA = a.urgency + (a.type === 'EN_TO_CN' ? 0.01 : 0);
                 let scoreB = b.urgency + (b.type === 'EN_TO_CN' ? 0.01 : 0);
                 return scoreB - scoreA;
             });
 
-            document.getElementById('stat-due').innerText = naturalReviewsDue;
-            document.getElementById('stat-new').innerText = unviewedCount;
-            document.getElementById('m-lv5').innerText = lv5;
-            document.getElementById('m-mid').innerText = mid;
-            document.getElementById('m-lv1').innerText = lv1;
-
+            // DYNAMIC DASHBOARD STATES GRAPHIC MANIPULATION
+            const activeWrapper = document.getElementById('status-active-wrapper');
+            const restWrapper = document.getElementById('status-rest-wrapper');
             const actionBtn = document.getElementById('action-btn');
-            if (activeQueue.length === 0) {
+
+            if (naturalReviewsDue === 0) {
+                // Display the calming rest state configuration
+                activeWrapper.style.display = 'none';
+                restWrapper.style.display = 'block';
                 actionBtn.innerText = "Free Review";
                 actionBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
             } else {
+                // Display standard active numbers tracking matrix
+                activeWrapper.style.display = 'flex';
+                restWrapper.style.display = 'none';
+                
+                document.getElementById('stat-due').innerText = naturalReviewsDue;
+                document.getElementById('stat-new').innerText = unviewedCount;
+                document.getElementById('m-lv5').innerText = lv5;
+                document.getElementById('m-mid').innerText = mid;
+                document.getElementById('m-lv1').innerText = lv1;
+
                 actionBtn.innerText = "Start Session";
                 actionBtn.style.background = "linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)";
             }
         }
 
         function startSession() {
-            isOverstudyMode = (activeQueue.length === 0);
+            // Check if we are initializing a standard session or an infinite overstudy loop
+            isOverstudyMode = (naturalReviewsDue === 0);
+            
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('study-space').style.display = 'flex';
+            
+            // If Free Review is empty on boot, pull a rolling card into existence immediately
+            if (isOverstudyMode && activeQueue.length === 0) {
+                injectNextFreeReviewCardIntoQueue();
+            }
+            
             renderNextCardInstance();
+        }
+
+        function injectNextFreeReviewCardIntoQueue() {
+            // Sort master deck looking for lowest average performance values first
+            masterDeck.sort((a, b) => {
+                let avgA = a.count > 0 ? (a.score / a.count) : 0;
+                let avgB = b.count > 0 ? (b.score / b.count) : 0;
+                if (avgA !== avgB) return avgA - avgB;
+                if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
+                return (a.count || 0) - (b.count || 0);
+            });
+
+            // Scan the sorted list for a card not currently locked out by history buffering
+            for (let i = 0; i < masterDeck.length; i++) {
+                if (!wordHistoryBuffer.includes(masterDeck[i].chinese)) {
+                    activeQueue.push({ ...masterDeck[i] });
+                    return;
+                }
+            }
+            // Fallback safety
+            activeQueue.push({ ...masterDeck[0] });
         }
 
         function exitToDashboard() {
             userWantsToExit = true;
             if (networkQueue.length > 0) {
                 document.getElementById('study-space').style.display = 'none';
-                document.getElementById('loading-screen').style.display = 'block';
+                document.getElementById('loading-screen').style.display = 'flex';
                 updateSyncGateMessageUI();
             } else {
                 initializeAppSync();
@@ -598,51 +770,47 @@
         function updateSyncGateMessageUI() {
             if (userWantsToExit && networkQueue.length > 0) {
                 document.getElementById('loading-screen').innerHTML = `
-                    <div style="font-size:1.1rem; margin-bottom:8px;">Wrapping up your session...</div>
+                    <div class="spinner"></div>
+                    <div style="font-size:1.1rem; margin-bottom:8px; font-weight:500;">Wrapping up your session...</div>
                     <div style="font-size:0.85rem; color:var(--text-muted);">Syncing final reviews with the cloud (Remaining: ${networkQueue.length})</div>
                 `;
             }
         }
 
         function renderNextCardInstance() {
-            if (activeQueue.length === 0 && !isOverstudyMode) {
-                exitToDashboard();
-                return;
+            if (activeQueue.length === 0) {
+                if (!isOverstudyMode) {
+                    exitToDashboard();
+                    return;
+                } else {
+                    // Infinite Free review loop fetches a fresh candidate onto the conveyor belt
+                    injectNextFreeReviewCardIntoQueue();
+                }
             }
 
             let card = null;
             let selectedQueueIndex = 0;
 
-            if (isOverstudyMode) {
-                masterDeck.sort((a,b) => {
-                    if (a.score !== b.score) return a.score - b.score;
-                    if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
-                    return (a.count || 0) - (b.count || 0);
-                });
-                
-                for (let i = 0; i < masterDeck.length; i++) {
-                    if (!wordHistoryBuffer.includes(masterDeck[i].chinese)) {
-                        card = masterDeck[i];
-                        break;
-                    }
+            // Search the upcoming layout list for an acceptable word not currently sitting inside recent history
+            for (let i = 0; i < activeQueue.length; i++) {
+                if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
+                    card = activeQueue[i];
+                    selectedQueueIndex = i;
+                    break;
                 }
-                if (!card) card = masterDeck[0];
-                document.getElementById('progress-counter').innerText = "Free Review";
-            } else {
-                for (let i = 0; i < activeQueue.length; i++) {
-                    if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
-                        card = activeQueue[i];
-                        selectedQueueIndex = i;
-                        break;
-                    }
-                }
-                if (!card) { card = activeQueue[0]; selectedQueueIndex = 0; }
-                document.getElementById('progress-counter').innerText = `${activeQueue.length} items left`;
             }
+            // Fallback selection mechanics
+            if (!card) { 
+                card = activeQueue[0]; 
+                selectedQueueIndex = 0; 
+            }
+
+            document.getElementById('progress-counter').innerText = isOverstudyMode ? "Free Review" : `${activeQueue.length} items left`;
 
             window.activeCard = card;
             window.currentActiveIndexInQueue = selectedQueueIndex;
 
+            // Reset UI Viewports back to fresh initialization status
             document.getElementById('prompt-pane').classList.remove('revealed-state');
             document.getElementById('answer-pane').classList.remove('revealed-state');
             document.getElementById('back-display-sub').classList.remove('expanded-from-clue');
@@ -650,7 +818,7 @@
             clueWasActivated = false;
 
             document.getElementById('clue-display-box').style.display = 'none';
-            document.getElementById('clue-trigger').style.display = 'none';
+            document.getElementById('clue-trigger').style.display = card.type === 'EN_TO_CN' ? 'block' : 'none';
 
             document.getElementById('tap-hint').style.display = 'block';
             document.getElementById('grade-controls').style.display = 'none';
@@ -680,8 +848,6 @@
             } else {
                 promptPane.className = "slide-pane en-mode";
                 document.getElementById('front-pill-tag').innerText = "Production";
-                
-                document.getElementById('clue-trigger').style.display = 'block';
                 
                 const enFrontLen = card.english.length;
                 if (enFrontLen > 90) frontText.style.fontSize = "1.2rem";
@@ -753,55 +919,57 @@
                 previousScore: card.score,
                 previousCount: card.count,
                 previousLastTime: card.lastTime,
-                wasInQueue: !isOverstudyMode,
-                queuePosition: window.currentActiveIndexInQueue
+                wasInQueue: true,
+                queuePosition: window.currentActiveIndexInQueue,
+                previousFailureType: card.lastFailureType || 0
             });
 
             wordHistoryBuffer.push(card.chinese);
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
-            if (!isOverstudyMode) activeQueue.splice(window.currentActiveIndexInQueue, 1);
+            
+            // Slice the active element out of the current presentation block
+            activeQueue.splice(window.currentActiveIndexInQueue, 1);
 
+            // Accumulate permanent metrics and dispatch write tasks to sheet
             card.score += scoreDelta;
             card.count += 1;
             card.lastTime = new Date();
 
             enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
-            renderNextCardInstance();
-        }
 
-        function triggerWritingRequeueLoop() {
-            const card = window.activeCard;
-            
-            historicalReviewStack.push({
-                cardObject: card,
-                ratingDeltaApplied: 4,
-                previousScore: card.score,
-                previousCount: card.count,
-                previousLastTime: card.lastTime,
-                wasInQueue: !isOverstudyMode,
-                queuePosition: window.currentActiveIndexInQueue
-            });
+            // INSTRUCTIONAL MULTI-STAGE MEMORY LOOP ENGINE
+            let nextLoopOffset = 0;
+            let attachMultiStageFlag = 0;
 
-            wordHistoryBuffer.push(card.chinese);
-            if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
-            
-            if (!isOverstudyMode) {
-                activeQueue.splice(window.currentActiveIndexInQueue, 1);
+            const wasPreviouslyFailed = (card.lastFailureType === 1 || card.lastFailureType === 2);
+
+            if (scoreDelta === 5) {
+                nextLoopOffset = 0; // Total escape
+            } 
+            else if (scoreDelta === 1) {
+                nextLoopOffset = 3;
+                attachMultiStageFlag = 1; // Stage 1 Flag
+            } 
+            else if (scoreDelta === 2) {
+                nextLoopOffset = 5;
+                attachMultiStageFlag = 2; // Stage 1 Flag
+            } 
+            else if (scoreDelta === 3 || scoreDelta === 4) {
+                if (wasPreviouslyFailed) {
+                    // Stage 2 execution pathway validation check
+                    nextLoopOffset = card.lastFailureType === 1 ? 6 : 9;
+                } else {
+                    nextLoopOffset = scoreDelta === 3 ? 8 : 12;
+                }
             }
 
-            card.score += 4;
-            card.count += 1;
-            card.lastTime = new Date();
+            if (nextLoopOffset > 0) {
+                const clonedCardInstance = { ...card };
+                clonedCardInstance.lastFailureType = attachMultiStageFlag; 
 
-            enqueueNetworkPayload({ word: card.chinese, type: card.type, score: 4 });
-
-            const reinsertIndex = Math.min(3, activeQueue.length);
-            const clonedCardInstance = { ...card };
-            
-            if (isOverstudyMode) {
-                activeQueue.push(clonedCardInstance); 
-            } else {
-                activeQueue.splice(reinsertIndex, 0, clonedCardInstance);
+                // Ensure looping elements function even inside infinite Free Review conveyor environments
+                const finalInsertIndex = activeQueue.length > 0 ? Math.min(nextLoopOffset, activeQueue.length) : 0;
+                activeQueue.splice(finalInsertIndex, 0, clonedCardInstance);
             }
 
             renderNextCardInstance();
@@ -823,12 +991,13 @@
                 previousLastTime: logEntry.previousLastTime ? logEntry.previousLastTime.toISOString() : ""
             });
 
+            // Structural inversion restores
             card.score = logEntry.previousScore; 
             card.count = logEntry.previousCount; 
             card.lastTime = logEntry.previousLastTime;
+            card.lastFailureType = logEntry.previousFailureType;
             
-            if (logEntry.wasInQueue) activeQueue.splice(logEntry.queuePosition, 0, card);
-            if(activeQueue.length > 0) isOverstudyMode = false;
+            activeQueue.splice(logEntry.queuePosition, 0, card);
             renderNextCardInstance();
         }
 
@@ -864,6 +1033,7 @@
                 }
             })
             .catch(() => {
+                // If a dropped package exception breaks loose, retry safety pipeline in 4 seconds
                 setTimeout(() => {
                     isProcessingNetworkQueue = false;
                     processNetworkPipeline();
