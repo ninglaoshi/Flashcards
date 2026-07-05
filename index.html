@@ -470,11 +470,23 @@
 
         initializeAppSync();
 
+        function parseCsvRow(rowText) {
+            return rowText
+                .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+                .map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+        }
+
+        function parseSheetDate(value) {
+            if (!value) return null;
+            const parsedDate = new Date(value);
+            return isNaN(parsedDate.getTime()) ? null : parsedDate;
+        }
+
         function parseSheetDatabase(text) {
             const lines = text.split('\n');
             for(let i = 1; i < lines.length; i++) {
                 if(!lines[i].trim()) continue;
-                const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+                const cols = parseCsvRow(lines[i]);
                 if(!cols[0]) continue;
 
                 const chinese = cols[0];
@@ -486,8 +498,8 @@
                 const c2eCount = cols[7] && !isNaN(cols[7]) ? parseInt(cols[7]) : 0;
                 const e2cCount = cols[8] && !isNaN(cols[8]) ? parseInt(cols[8]) : 0;
                 
-                const c2eTime = cols[9] && cols[9] !== "" ? new Date(cols[9]) : null;
-                const e2cTime = cols[10] && cols[10] !== "" ? new Date(cols[10]) : null;
+                const c2eTime = parseSheetDate(cols[9]);
+                const e2cTime = parseSheetDate(cols[10]);
 
                 masterDeck.push({ chinese, english, pinyin, score: c2eScore, count: c2eCount, lastTime: c2eTime, type: 'CN_TO_EN' });
                 masterDeck.push({ chinese, english, pinyin, score: e2cScore, count: e2cCount, lastTime: e2cTime, type: 'EN_TO_CN' });
@@ -849,6 +861,7 @@
             fetch(WRITE_URL, {
                 method: 'POST',
                 mode: 'no-cors',
+                keepalive: true,
                 body: JSON.stringify(dynamicPayload)
             })
             .then(() => {
@@ -886,4 +899,3 @@
     </script>
 </body>
 </html>
-
