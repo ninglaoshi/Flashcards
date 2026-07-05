@@ -6,15 +6,15 @@
     <title>Chinese Flashcards SRS</title>
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --panel-bg: #1e293b;
-            --accent-primary: #38bdf8;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-dark: #ecfeff;
+            --panel-bg: #ffffff;
+            --accent-primary: #0ea5e9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
             
-            --front-cn-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            --front-en-bg: linear-gradient(135deg, #1e2a38 0%, #0d1e2d 100%);
-            --back-card-bg: #111827;
+            --front-cn-bg: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
+            --front-en-bg: linear-gradient(135deg, #34d399 0%, #0ea5e9 100%);
+            --back-card-bg: #f8fafc;
             
             --btn-1: #ef4444;
             --btn-2: #f97316;
@@ -46,8 +46,8 @@
             border-radius: 24px;
             padding: 24px;
             box-sizing: border-box;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 20px 40px rgba(14, 165, 233, 0.18);
+            border: 1px solid rgba(14, 165, 233, 0.18);
         }
 
         .dash-header { text-align: center; margin-bottom: 24px; }
@@ -62,23 +62,23 @@
         }
 
         .stat-box {
-            background: rgba(15, 23, 42, 0.5);
+            background: rgba(14, 165, 233, 0.08);
             padding: 16px;
             border-radius: 16px;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.03);
+            border: 1px solid rgba(14, 165, 233, 0.12);
         }
         .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--accent-primary); }
         .stat-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px; }
 
         .mastery-panel {
-            background: rgba(15, 23, 42, 0.3);
+            background: rgba(20, 184, 166, 0.08);
             border-radius: 16px;
             padding: 14px;
             margin-bottom: 24px;
         }
         .mastery-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; text-align: center;}
-        .mastery-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; color: #cbd5e1; }
+        .mastery-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; color: #334155; }
         .mastery-row:last-child { margin-bottom: 0; }
 
         .btn-start {
@@ -122,9 +122,9 @@
         
         /* ENHANCED HOME BUTTON */
         .btn-nav-control {
-            background: #334155;
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #f1f5f9;
+            background: #e0f2fe;
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            color: #075985;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 0.85rem;
@@ -136,7 +136,7 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             transition: background 0.15s, transform 0.1s;
         }
-        .btn-nav-control:active { transform: scale(0.95); background: #475569; }
+        .btn-nav-control:active { transform: scale(0.95); background: #bae6fd; }
 
         /* REVEAL SLIDE VIEWPORT PANEL */
         .flashcard-container {
@@ -146,8 +146,8 @@
             margin-bottom: 20px;
             background: var(--back-card-bg);
             border-radius: 32px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 15px 40px rgba(14, 165, 233, 0.22);
+            border: 1px solid rgba(14, 165, 233, 0.18);
             overflow: hidden;
             cursor: pointer;
         }
@@ -169,6 +169,7 @@
             z-index: 2;
             justify-content: center;
             align-items: center;
+            color: #ffffff;
         }
         #prompt-pane.cn-mode { background: var(--front-cn-bg); }
         #prompt-pane.en-mode { background: var(--front-en-bg); }
@@ -272,7 +273,7 @@
         .back-main { 
             font-size: 2.2rem; 
             font-weight: 700; 
-            color: #fff; 
+            color: #0f172a; 
             margin-bottom: 8px;
             line-height: 1.2;
             word-break: break-word; 
@@ -438,6 +439,7 @@
         let isRevealed = false;
         let isOverstudyMode = false;
         let clueWasActivated = false;
+        let repairGroupCounter = 0;
 
         // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
         let networkQueue = [];
@@ -480,6 +482,60 @@
             if (!value) return null;
             const parsedDate = new Date(value);
             return isNaN(parsedDate.getTime()) ? null : parsedDate;
+        }
+
+        function buildRepairPlan(scoreDelta) {
+            if (scoreDelta <= 1) return [4, 10, 18, 28];
+            if (scoreDelta === 2) return [6, 14, 24];
+            if (scoreDelta === 3) return [10, 20];
+            if (scoreDelta === 4) return [13];
+            return [];
+        }
+
+        function removeRepairCardsByGroup(repairGroupId) {
+            if (!repairGroupId) return;
+            activeQueue = activeQueue.filter(card => card.repairGroupId !== repairGroupId);
+        }
+
+        function advanceFreeReviewRepairCountdowns() {
+            if (!isOverstudyMode) return;
+            activeQueue.forEach(card => {
+                if (card.isRepairReview && card.freeReviewDelayRemaining > 0) {
+                    card.freeReviewDelayRemaining -= 1;
+                }
+            });
+        }
+
+        function scheduleRepairRepeat(sourceCard, repairPlan, repairGroupId) {
+            if (!repairPlan || repairPlan.length === 0) return null;
+
+            const delayCards = repairPlan[0];
+            const remainingPlan = repairPlan.slice(1);
+            const baseCard = sourceCard.sourceCard || sourceCard;
+            const repairCard = {
+                ...baseCard,
+                sourceCard: baseCard,
+                isRepairReview: true,
+                repairGroupId,
+                remainingRepairPlan: remainingPlan,
+                freeReviewDelayRemaining: isOverstudyMode ? delayCards : 0
+            };
+
+            if (isOverstudyMode) {
+                activeQueue.push(repairCard);
+            } else {
+                const insertIndex = Math.min(delayCards, activeQueue.length);
+                activeQueue.splice(insertIndex, 0, repairCard);
+            }
+            return repairGroupId;
+        }
+
+        function sortFreeReviewDeck() {
+            masterDeck.sort((a,b) => {
+                if (a.score !== b.score) return a.score - b.score;
+                if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
+                return (a.count || 0) - (b.count || 0);
+            });
         }
 
         function parseSheetDatabase(text) {
@@ -626,20 +682,33 @@
             let selectedQueueIndex = 0;
 
             if (isOverstudyMode) {
-                masterDeck.sort((a,b) => {
-                    if (a.score !== b.score) return a.score - b.score;
-                    if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
-                    return (a.count || 0) - (b.count || 0);
-                });
-                
-                for (let i = 0; i < masterDeck.length; i++) {
-                    if (!wordHistoryBuffer.includes(masterDeck[i].chinese)) {
-                        card = masterDeck[i];
-                        break;
+                if (activeQueue.length > 0) {
+                    for (let i = 0; i < activeQueue.length; i++) {
+                        const repairIsReady = (activeQueue[i].freeReviewDelayRemaining || 0) <= 0;
+                        if (repairIsReady && !wordHistoryBuffer.includes(activeQueue[i].chinese)) {
+                            card = activeQueue[i];
+                            selectedQueueIndex = i;
+                            break;
+                        }
                     }
+                } else {
+                    sortFreeReviewDeck();
                 }
-                if (!card) card = masterDeck[0];
-                document.getElementById('progress-counter').innerText = "Free Review";
+
+                if (!card) {
+                    sortFreeReviewDeck();
+
+                    for (let i = 0; i < masterDeck.length; i++) {
+                        if (!wordHistoryBuffer.includes(masterDeck[i].chinese)) {
+                            card = masterDeck[i];
+                            break;
+                        }
+                    }
+                    if (!card) card = masterDeck[0];
+                }
+
+                const repairCount = activeQueue.length;
+                document.getElementById('progress-counter').innerText = repairCount > 0 ? `Free Review · ${repairCount} repair` : "Free Review";
             } else {
                 for (let i = 0; i < activeQueue.length; i++) {
                     if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
@@ -758,26 +827,50 @@
 
         function submitPerformanceRating(scoreDelta) {
             const card = window.activeCard;
+            const baseCard = card.sourceCard || card;
+            const wasRepairReview = card.isRepairReview === true;
             
             historicalReviewStack.push({
                 cardObject: card,
                 ratingDeltaApplied: scoreDelta,
-                previousScore: card.score,
-                previousCount: card.count,
-                previousLastTime: card.lastTime,
+                previousScore: baseCard.score,
+                previousCount: baseCard.count,
+                previousLastTime: baseCard.lastTime,
                 wasInQueue: !isOverstudyMode,
-                queuePosition: window.currentActiveIndexInQueue
+                queuePosition: window.currentActiveIndexInQueue,
+                sentToSpreadsheet: !wasRepairReview,
+                repairGroupId: card.repairGroupId || null,
+                generatedRepairGroupId: null
             });
+            const historyEntry = historicalReviewStack[historicalReviewStack.length - 1];
 
-            wordHistoryBuffer.push(card.chinese);
+            wordHistoryBuffer.push(baseCard.chinese);
             if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
             if (!isOverstudyMode) activeQueue.splice(window.currentActiveIndexInQueue, 1);
+            else if (wasRepairReview) activeQueue.splice(window.currentActiveIndexInQueue, 1);
 
-            card.score += scoreDelta;
-            card.count += 1;
-            card.lastTime = new Date();
+            advanceFreeReviewRepairCountdowns();
 
-            enqueueNetworkPayload({ word: card.chinese, type: card.type, score: scoreDelta });
+            if (wasRepairReview) {
+                let nextRepairPlan = card.remainingRepairPlan || [];
+                if (scoreDelta <= 2 && nextRepairPlan.length === 0) {
+                    nextRepairPlan = [8];
+                }
+                historyEntry.generatedRepairGroupId = scheduleRepairRepeat(baseCard, nextRepairPlan, card.repairGroupId);
+            } else {
+                baseCard.score += scoreDelta;
+                baseCard.count += 1;
+                baseCard.lastTime = new Date();
+
+                enqueueNetworkPayload({ word: baseCard.chinese, type: baseCard.type, score: scoreDelta });
+
+                const repairPlan = buildRepairPlan(scoreDelta);
+                if (repairPlan.length > 0) {
+                    const repairGroupId = `repair-${++repairGroupCounter}`;
+                    historyEntry.generatedRepairGroupId = scheduleRepairRepeat(baseCard, repairPlan, repairGroupId);
+                }
+            }
+
             renderNextCardInstance();
         }
 
@@ -823,21 +916,26 @@
             if (historicalReviewStack.length === 0) return;
             const logEntry = historicalReviewStack.pop();
             const card = logEntry.cardObject;
+            const baseCard = card.sourceCard || card;
 
-            const bufferIdx = wordHistoryBuffer.lastIndexOf(card.chinese);
+            const bufferIdx = wordHistoryBuffer.lastIndexOf(baseCard.chinese);
             if(bufferIdx !== -1) wordHistoryBuffer.splice(bufferIdx, 1);
 
-            enqueueNetworkPayload({ 
-                word: card.chinese, 
-                type: card.type, 
-                score: logEntry.ratingDeltaApplied, 
-                rollbackDecrement: true,
-                previousLastTime: logEntry.previousLastTime ? logEntry.previousLastTime.toISOString() : ""
-            });
+            removeRepairCardsByGroup(logEntry.generatedRepairGroupId);
 
-            card.score = logEntry.previousScore; 
-            card.count = logEntry.previousCount; 
-            card.lastTime = logEntry.previousLastTime;
+            if (logEntry.sentToSpreadsheet) {
+                enqueueNetworkPayload({ 
+                    word: baseCard.chinese, 
+                    type: baseCard.type, 
+                    score: logEntry.ratingDeltaApplied, 
+                    rollbackDecrement: true,
+                    previousLastTime: logEntry.previousLastTime ? logEntry.previousLastTime.toISOString() : ""
+                });
+
+                baseCard.score = logEntry.previousScore; 
+                baseCard.count = logEntry.previousCount; 
+                baseCard.lastTime = logEntry.previousLastTime;
+            }
             
             if (logEntry.wasInQueue) activeQueue.splice(logEntry.queuePosition, 0, card);
             if(activeQueue.length > 0) isOverstudyMode = false;
