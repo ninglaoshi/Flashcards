@@ -6,14 +6,16 @@
     <title>Chinese Flashcards SRS</title>
     <style>
         :root {
-            --bg-dark: #ecfeff;
+            --bg-dark: #f0fdf4;
             --panel-bg: #ffffff;
-            --accent-primary: #0ea5e9;
+            --accent-primary: #14b8a6;
             --text-main: #0f172a;
             --text-muted: #64748b;
             
-            --front-cn-bg: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
-            --front-en-bg: linear-gradient(135deg, #34d399 0%, #0ea5e9 100%);
+            --front-cn-bg: linear-gradient(135deg, #14b8a6 0%, #2563eb 100%);
+            --front-en-bg: linear-gradient(135deg, #fb7185 0%, #f97316 100%);
+            --front-new-cn-bg: linear-gradient(135deg, #facc15 0%, #f97316 100%);
+            --front-new-en-bg: linear-gradient(135deg, #22c55e 0%, #14b8a6 100%);
             --back-card-bg: #f8fafc;
             
             --btn-1: #ef4444;
@@ -46,44 +48,42 @@
             border-radius: 24px;
             padding: 24px;
             box-sizing: border-box;
-            box-shadow: 0 20px 40px rgba(14, 165, 233, 0.18);
-            border: 1px solid rgba(14, 165, 233, 0.18);
+            box-shadow: 0 20px 40px rgba(20, 184, 166, 0.18);
+            border: 1px solid rgba(20, 184, 166, 0.18);
         }
 
         .dash-header { text-align: center; margin-bottom: 24px; }
         .dash-title { font-size: 1.6rem; font-weight: 700; margin: 0; color: var(--text-main); }
         .dash-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .stat-box {
-            background: rgba(14, 165, 233, 0.08);
-            padding: 16px;
-            border-radius: 16px;
+        .hero-metric {
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(251, 113, 133, 0.12));
+            border: 1px solid rgba(20, 184, 166, 0.18);
+            border-radius: 18px;
+            padding: 26px 18px;
             text-align: center;
-            border: 1px solid rgba(14, 165, 233, 0.12);
+            margin-bottom: 16px;
         }
-        .stat-val { font-size: 1.8rem; font-weight: 700; color: var(--accent-primary); }
-        .stat-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; letter-spacing: 0.5px; }
+        .hero-val { font-size: 4rem; line-height: 0.95; font-weight: 800; color: var(--accent-primary); }
+        .hero-lbl { font-size: 0.95rem; color: var(--text-main); margin-top: 10px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
+        .hero-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; }
 
-        .mastery-panel {
-            background: rgba(20, 184, 166, 0.08);
+        .library-panel {
+            background: rgba(15, 23, 42, 0.04);
             border-radius: 16px;
-            padding: 14px;
+            padding: 14px 16px;
             margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #334155;
         }
-        .mastery-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; text-align: center;}
-        .mastery-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; color: #334155; }
-        .mastery-row:last-child { margin-bottom: 0; }
+        .library-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .library-count { font-size: 1.35rem; font-weight: 800; color: var(--text-main); }
 
         .btn-start {
             width: 100%;
-            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
             color: white;
             border: none;
             padding: 16px;
@@ -91,7 +91,7 @@
             font-weight: 600;
             border-radius: 16px;
             cursor: pointer;
-            box-shadow: 0 8px 16px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 8px 16px rgba(20, 184, 166, 0.24);
             transition: transform 0.1s;
         }
         .btn-start:active { transform: scale(0.98); }
@@ -122,9 +122,9 @@
         
         /* ENHANCED HOME BUTTON */
         .btn-nav-control {
-            background: #e0f2fe;
-            border: 1px solid rgba(14, 165, 233, 0.2);
-            color: #075985;
+            background: #ccfbf1;
+            border: 1px solid rgba(20, 184, 166, 0.25);
+            color: #0f766e;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 0.85rem;
@@ -136,7 +136,7 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             transition: background 0.15s, transform 0.1s;
         }
-        .btn-nav-control:active { transform: scale(0.95); background: #bae6fd; }
+        .btn-nav-control:active { transform: scale(0.95); background: #99f6e4; }
 
         /* REVEAL SLIDE VIEWPORT PANEL */
         .flashcard-container {
@@ -146,8 +146,8 @@
             margin-bottom: 20px;
             background: var(--back-card-bg);
             border-radius: 32px;
-            box-shadow: 0 15px 40px rgba(14, 165, 233, 0.22);
-            border: 1px solid rgba(14, 165, 233, 0.18);
+            box-shadow: 0 15px 40px rgba(20, 184, 166, 0.22);
+            border: 1px solid rgba(20, 184, 166, 0.18);
             overflow: hidden;
             cursor: pointer;
         }
@@ -173,6 +173,8 @@
         }
         #prompt-pane.cn-mode { background: var(--front-cn-bg); }
         #prompt-pane.en-mode { background: var(--front-en-bg); }
+        body.new-phase #prompt-pane.cn-mode { background: var(--front-new-cn-bg); }
+        body.new-phase #prompt-pane.en-mode { background: var(--front-new-en-bg); }
 
         /* When answer is revealed, prompt slides to bottom 35% area */
         #prompt-pane.revealed-state {
@@ -345,6 +347,20 @@
             font-size: 0.65rem;
             display: none;
         }
+
+        .transition-panel {
+            width: 100%;
+            max-width: 380px;
+            background: var(--panel-bg);
+            border-radius: 24px;
+            padding: 26px;
+            box-sizing: border-box;
+            box-shadow: 0 20px 40px rgba(20, 184, 166, 0.18);
+            border: 1px solid rgba(20, 184, 166, 0.18);
+            text-align: center;
+        }
+        .transition-title { font-size: 1.45rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
+        .transition-copy { font-size: 0.98rem; line-height: 1.4; color: var(--text-muted); margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -359,25 +375,24 @@
             <div class="dash-subtitle" id="dash-date">Calculating reviews...</div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-box">
-                <div class="stat-val" id="stat-due">0</div>
-                <div class="stat-lbl">Due Now</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-val" id="stat-new">0</div>
-                <div class="stat-lbl">New</div>
-            </div>
+        <div class="hero-metric">
+            <div class="hero-val" id="hero-count">0</div>
+            <div class="hero-lbl" id="hero-label">Ready for Review</div>
+            <div class="hero-sub" id="hero-subtitle">cards waiting</div>
         </div>
 
-        <div class="mastery-panel">
-            <div class="mastery-title">Knowledge Breakdown</div>
-            <div class="mastery-row"><span>🔥 Mastered (Avg ≥4.5):</span><span id="m-lv5">0</span></div>
-            <div class="mastery-row"><span>⚡ Reviewing (Avg 2.5-4.4):</span><span id="m-mid">0</span></div>
-            <div class="mastery-row"><span>⚠️ Struggles (Avg &lt;2.5):</span><span id="m-lv1">0</span></div>
+        <div class="library-panel">
+            <div class="library-title">Vocabulary Library</div>
+            <div class="library-count"><span id="vocab-count">0</span> terms</div>
         </div>
 
         <button class="btn-start" id="action-btn" onclick="startSession()">Start Session</button>
+    </div>
+
+    <div id="transition-screen" class="transition-panel" style="display: none;">
+        <div class="transition-title" id="transition-title">Nice work.</div>
+        <div class="transition-copy" id="transition-copy">You learned new words.</div>
+        <button class="btn-start" id="transition-btn" onclick="continueAfterNewCards()">Keep Reviewing</button>
     </div>
 
     <div id="study-space" class="workspace" style="display: none;">
@@ -434,12 +449,17 @@
 
         let masterDeck = [];
         let activeQueue = [];
+        let pendingNewQueue = [];
+        let pendingReviewQueue = [];
         let historicalReviewStack = [];
         let wordHistoryBuffer = []; 
         let isRevealed = false;
         let isOverstudyMode = false;
         let clueWasActivated = false;
         let repairGroupCounter = 0;
+        let sessionPhase = 'dashboard';
+        let learnedNewTermCount = 0;
+        let vocabularyTermCount = 0;
 
         // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
         let networkQueue = [];
@@ -452,10 +472,16 @@
             userWantsToExit = false;
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('study-space').style.display = 'none';
+            document.getElementById('transition-screen').style.display = 'none';
             document.getElementById('loading-screen').style.display = 'block';
             document.getElementById('loading-screen').innerText = "Syncing Master Data...";
             
             masterDeck = []; 
+            pendingNewQueue = [];
+            pendingReviewQueue = [];
+            activeQueue = [];
+            sessionPhase = 'dashboard';
+            document.body.classList.remove('new-phase');
             
             fetch(READ_URL)
                 .then(res => res.text())
@@ -564,10 +590,12 @@
 
         function compileDashboardMetrics() {
             const now = new Date();
-            let naturalReviewsDue = 0;
-            let unviewedCount = 0;
-            let lv5 = 0, mid = 0, lv1 = 0;
+            let reviewCardsDue = 0;
+            const vocabularyTerms = new Set();
+            const newTerms = new Set();
             
+            pendingNewQueue = [];
+            pendingReviewQueue = [];
             activeQueue = [];
             let poolOfNotDueCards = [];
             let studiedTodayCount = 0;
@@ -575,21 +603,17 @@
             const todayString = now.toDateString();
 
             masterDeck.forEach(card => {
+                vocabularyTerms.add(card.chinese);
                 let averageScore = card.count > 0 ? (card.score / card.count) : 0;
 
                 if (card.lastTime && card.lastTime.toDateString() === todayString) {
                     studiedTodayCount++;
                 }
 
-                if (card.count === 0) unviewedCount++;
-                else if (averageScore >= 4.5) lv5++;
-                else if (averageScore >= 2.5) mid++;
-                else lv1++;
-
                 if (card.count === 0) {
                     card.urgency = 100;
-                    activeQueue.push(card);
-                    naturalReviewsDue++;
+                    pendingNewQueue.push(card);
+                    newTerms.add(card.chinese);
                 } else {
                     let computedIntervalDays = 0;
                     let roundedPerformanceLevel = Math.round(averageScore);
@@ -607,55 +631,120 @@
                     card.urgency = daysElapsed / (computedIntervalDays || 0.003);
 
                     if (daysElapsed >= computedIntervalDays) {
-                        activeQueue.push(card);
-                        if (card.score > 0) naturalReviewsDue++;
+                        pendingReviewQueue.push(card);
+                        reviewCardsDue++;
                     } else {
                         poolOfNotDueCards.push(card);
                     }
                 }
             });
 
-            if (studiedTodayCount === 0 && activeQueue.length < 30 && masterDeck.length > 0) {
+            if (studiedTodayCount === 0 && pendingNewQueue.length === 0 && pendingReviewQueue.length < 30 && masterDeck.length > 0) {
                 poolOfNotDueCards.sort((a, b) => b.urgency - a.urgency);
-                while (activeQueue.length < 30 && poolOfNotDueCards.length > 0) {
-                    activeQueue.push(poolOfNotDueCards.shift());
+                while (pendingReviewQueue.length < 30 && poolOfNotDueCards.length > 0) {
+                    pendingReviewQueue.push(poolOfNotDueCards.shift());
                 }
             }
 
             // EN_TO_CN PRODUCTION BIAS SORT MODIFIER
-            activeQueue.sort((a, b) => {
+            pendingNewQueue.sort((a, b) => {
+                if (a.chinese !== b.chinese) return a.chinese.localeCompare(b.chinese);
+                return a.type === 'EN_TO_CN' ? 1 : -1;
+            });
+
+            pendingReviewQueue.sort((a, b) => {
                 let scoreA = a.urgency + (a.type === 'EN_TO_CN' ? 0.01 : 0);
                 let scoreB = b.urgency + (b.type === 'EN_TO_CN' ? 0.01 : 0);
                 return scoreB - scoreA;
             });
 
-            document.getElementById('stat-due').innerText = naturalReviewsDue;
-            document.getElementById('stat-new').innerText = unviewedCount;
-            document.getElementById('m-lv5').innerText = lv5;
-            document.getElementById('m-mid').innerText = mid;
-            document.getElementById('m-lv1').innerText = lv1;
+            vocabularyTermCount = vocabularyTerms.size;
+            document.getElementById('vocab-count').innerText = vocabularyTermCount;
 
             const actionBtn = document.getElementById('action-btn');
-            if (activeQueue.length === 0) {
+            if (pendingNewQueue.length > 0) {
+                document.getElementById('hero-count').innerText = newTerms.size;
+                document.getElementById('hero-label').innerText = newTerms.size === 1 ? "New Term" : "New Terms";
+                document.getElementById('hero-subtitle').innerText = `${pendingNewQueue.length} new cards to learn`;
+                actionBtn.innerText = "Start Session";
+                actionBtn.style.background = "linear-gradient(135deg, #f97316 0%, #e11d48 100%)";
+            } else if (pendingReviewQueue.length > 0) {
+                document.getElementById('hero-count').innerText = pendingReviewQueue.length;
+                document.getElementById('hero-label').innerText = "Ready for Review";
+                document.getElementById('hero-subtitle').innerText = pendingReviewQueue.length === 1 ? "card waiting" : "cards waiting";
+                actionBtn.innerText = "Start Session";
+                actionBtn.style.background = "linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)";
+            } else {
+                document.getElementById('hero-count').innerText = "0";
+                document.getElementById('hero-label').innerText = "All Caught Up";
+                document.getElementById('hero-subtitle').innerText = "Free Review is available";
                 actionBtn.innerText = "Free Review";
                 actionBtn.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
-            } else {
-                actionBtn.innerText = "Start Session";
-                actionBtn.style.background = "linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)";
             }
         }
 
         function startSession() {
-            isOverstudyMode = (activeQueue.length === 0);
+            historicalReviewStack = [];
+            wordHistoryBuffer = [];
+            activeQueue = [];
+            isOverstudyMode = false;
+
+            if (pendingNewQueue.length > 0) {
+                sessionPhase = 'new';
+                activeQueue = [...pendingNewQueue];
+                learnedNewTermCount = new Set(pendingNewQueue.map(card => card.chinese)).size;
+                document.body.classList.add('new-phase');
+            } else if (pendingReviewQueue.length > 0) {
+                sessionPhase = 'review';
+                activeQueue = [...pendingReviewQueue];
+                document.body.classList.remove('new-phase');
+            } else {
+                sessionPhase = 'free';
+                isOverstudyMode = true;
+                document.body.classList.remove('new-phase');
+            }
+
             document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('transition-screen').style.display = 'none';
             document.getElementById('study-space').style.display = 'flex';
             renderNextCardInstance();
         }
 
+        function showNewCardsCompleteTransition() {
+            document.getElementById('study-space').style.display = 'none';
+            document.getElementById('transition-screen').style.display = 'block';
+            document.body.classList.remove('new-phase');
+
+            const hasMoreReview = pendingReviewQueue.length > 0 || activeQueue.length > 0;
+            const termLabel = learnedNewTermCount === 1 ? "term" : "terms";
+            document.getElementById('transition-title').innerText = "Nice work.";
+            document.getElementById('transition-copy').innerText = hasMoreReview
+                ? `You learned ${learnedNewTermCount} new ${termLabel}. Now let's keep reviewing.`
+                : `You learned ${learnedNewTermCount} new ${termLabel}. Take a break for now.`;
+            document.getElementById('transition-btn').innerText = hasMoreReview ? "Keep Reviewing" : "Back to Dashboard";
+        }
+
+        function continueAfterNewCards() {
+            const repairQueue = activeQueue.filter(card => card.isRepairReview);
+            if (pendingReviewQueue.length > 0 || repairQueue.length > 0) {
+                sessionPhase = 'review';
+                isOverstudyMode = false;
+                activeQueue = [...repairQueue, ...pendingReviewQueue];
+                pendingReviewQueue = [];
+                document.getElementById('transition-screen').style.display = 'none';
+                document.getElementById('study-space').style.display = 'flex';
+                renderNextCardInstance();
+            } else {
+                exitToDashboard();
+            }
+        }
+
         function exitToDashboard() {
             userWantsToExit = true;
+            document.body.classList.remove('new-phase');
             if (networkQueue.length > 0) {
                 document.getElementById('study-space').style.display = 'none';
+                document.getElementById('transition-screen').style.display = 'none';
                 document.getElementById('loading-screen').style.display = 'block';
                 updateSyncGateMessageUI();
             } else {
@@ -673,6 +762,14 @@
         }
 
         function renderNextCardInstance() {
+            if (sessionPhase === 'new') {
+                const hasUnstudiedNewCards = activeQueue.some(card => !card.isRepairReview && card.count === 0);
+                if (!hasUnstudiedNewCards) {
+                    showNewCardsCompleteTransition();
+                    return;
+                }
+            }
+
             if (activeQueue.length === 0 && !isOverstudyMode) {
                 exitToDashboard();
                 return;
@@ -718,7 +815,12 @@
                     }
                 }
                 if (!card) { card = activeQueue[0]; selectedQueueIndex = 0; }
-                document.getElementById('progress-counter').innerText = `${activeQueue.length} items left`;
+                if (sessionPhase === 'new') {
+                    const newCardsLeft = activeQueue.filter(queueCard => !queueCard.isRepairReview && queueCard.count === 0).length;
+                    document.getElementById('progress-counter').innerText = `${newCardsLeft} new left`;
+                } else {
+                    document.getElementById('progress-counter').innerText = `${activeQueue.length} items left`;
+                }
             }
 
             window.activeCard = card;
@@ -938,7 +1040,7 @@
             }
             
             if (logEntry.wasInQueue) activeQueue.splice(logEntry.queuePosition, 0, card);
-            if(activeQueue.length > 0) isOverstudyMode = false;
+            if(sessionPhase !== 'free' && activeQueue.length > 0) isOverstudyMode = false;
             renderNextCardInstance();
         }
 
@@ -997,4 +1099,3 @@
     </script>
 </body>
 </html>
-
