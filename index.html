@@ -117,6 +117,31 @@
             color: var(--text-muted);
             font-weight: 500;
         }
+
+        .session-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        .queue-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .queue-pill {
+            border: none;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.16);
+        }
+        .urgent-pill { background: #e11d48; }
+        .writing-pill { background: #334155; cursor: default; }
         
         /* ENHANCED HOME BUTTON */
         .btn-nav-control {
@@ -330,6 +355,26 @@
             border-radius: 10px;
             font-size: 0.68rem;
         }
+        .writing-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+        .writing-action-btn {
+            border: none;
+            color: white;
+            height: 62px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+            padding: 6px;
+        }
+        .writing-done { background: var(--btn-5); }
+        .writing-soon { background: #475569; }
+        .writing-later { background: #0ea5e9; }
         
         .b1 { background: var(--btn-1); }
         .b2 { background: var(--btn-2); }
@@ -415,7 +460,13 @@
                     <span>↩</span> Undo
                 </button>
             </div>
-            <div class="counter-pill" id="progress-counter">Loading cards...</div>
+            <div class="session-status">
+                <div class="counter-pill" id="progress-counter">Loading cards...</div>
+                <div class="queue-pills">
+                    <button class="queue-pill urgent-pill" id="urgent-pill" onclick="startUrgentWrapUp()" style="display: none;">Urgent Reviews: 0</button>
+                    <button class="queue-pill writing-pill" id="writing-pill" style="display: none;">Writing Review: 0</button>
+                </div>
+            </div>
         </div>
 
         <div class="flashcard-container" id="deck-viewport" onclick="executeRevealSlide()">
@@ -450,6 +501,11 @@
                 <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it</button>
                 <button class="grad-btn writing-review-btn" onclick="triggerWritingRequeueLoop()"><span>✍️</span>Writing Review</button>
             </div>
+            <div id="writing-controls" class="writing-controls" style="display: none;">
+                <button class="writing-action-btn writing-done" onclick="resolveWritingPractice()">Done Writing</button>
+                <button class="writing-action-btn writing-soon" onclick="repeatWritingPractice(3)">Again in 3</button>
+                <button class="writing-action-btn writing-later" onclick="repeatWritingPractice(6)">Again in 6</button>
+            </div>
         </div>
     </div>
 
@@ -470,6 +526,7 @@
         let sessionPhase = 'dashboard';
         let learnedNewTermCount = 0;
         let vocabularyTermCount = 0;
+        let isUrgentWrapUpMode = false;
 
         // SEQUENTIAL NETWORK BACKGROUND REQUEST QUEUE SYSTEM
         let networkQueue = [];
@@ -491,6 +548,7 @@
             pendingReviewQueue = [];
             activeQueue = [];
             sessionPhase = 'dashboard';
+            isUrgentWrapUpMode = false;
             document.body.classList.remove('new-phase');
             
             fetch(READ_URL)
@@ -533,6 +591,26 @@
             activeQueue = activeQueue.filter(card => card.repairGroupId !== repairGroupId);
         }
 
+        function countUrgentReviews() {
+            return activeQueue.filter(card => card.isRepairReview && !card.isWritingPractice).length;
+        }
+
+        function countWritingReviews() {
+            return activeQueue.filter(card => card.isWritingPractice).length;
+        }
+
+        function updateQueuePills() {
+            const urgentCount = countUrgentReviews();
+            const writingCount = countWritingReviews();
+            const urgentPill = document.getElementById('urgent-pill');
+            const writingPill = document.getElementById('writing-pill');
+
+            urgentPill.style.display = urgentCount > 0 ? 'block' : 'none';
+            urgentPill.innerText = `Urgent Reviews: ${urgentCount}`;
+            writingPill.style.display = writingCount > 0 ? 'block' : 'none';
+            writingPill.innerText = `Writing Review: ${writingCount}`;
+        }
+
         function advanceFreeReviewRepairCountdowns() {
             if (!isOverstudyMode) return;
             activeQueue.forEach(card => {
@@ -566,10 +644,11 @@
             return repairGroupId;
         }
 
-        function scheduleWritingPractice(sourceCard, writingGroupId) {
+        function scheduleWritingPractice(sourceCard, writingGroupId, delayCards = 4) {
             const baseCard = sourceCard.sourceCard || sourceCard;
             const writingCard = {
                 ...baseCard,
+                type: 'EN_TO_CN',
                 sourceCard: baseCard,
                 isRepairReview: true,
                 isWritingPractice: true,
@@ -578,10 +657,10 @@
             };
 
             if (isOverstudyMode) {
-                writingCard.freeReviewDelayRemaining = 4;
+                writingCard.freeReviewDelayRemaining = delayCards;
                 activeQueue.push(writingCard);
             } else {
-                const insertIndex = Math.min(4, activeQueue.length);
+                const insertIndex = Math.min(delayCards, activeQueue.length);
                 activeQueue.splice(insertIndex, 0, writingCard);
             }
             return writingGroupId;
@@ -753,6 +832,7 @@
                 ? `You learned ${learnedNewTermCount} new ${termLabel}. Now let's keep reviewing.`
                 : `You learned ${learnedNewTermCount} new ${termLabel}. Take a break for now.`;
             document.getElementById('transition-btn').innerText = hasMoreReview ? "Keep Reviewing" : "Back to Dashboard";
+            document.getElementById('transition-btn').onclick = continueAfterNewCards;
         }
 
         function continueAfterNewCards() {
@@ -770,9 +850,32 @@
             }
         }
 
+        function startUrgentWrapUp() {
+            if (countUrgentReviews() === 0) return;
+            isUrgentWrapUpMode = true;
+            sessionPhase = 'urgent';
+            isOverstudyMode = false;
+            document.body.classList.remove('new-phase');
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('transition-screen').style.display = 'none';
+            document.getElementById('study-space').style.display = 'flex';
+            renderNextCardInstance();
+        }
+
+        function showUrgentWrapUpComplete() {
+            isUrgentWrapUpMode = false;
+            document.getElementById('study-space').style.display = 'none';
+            document.getElementById('transition-screen').style.display = 'block';
+            document.getElementById('transition-title').innerText = "Urgent reviews cleared.";
+            document.getElementById('transition-copy').innerText = "Nice work. The fragile cards are handled for now.";
+            document.getElementById('transition-btn').innerText = "Back to Dashboard";
+            document.getElementById('transition-btn').onclick = exitToDashboard;
+        }
+
         function exitToDashboard() {
             userWantsToExit = true;
             document.body.classList.remove('new-phase');
+            isUrgentWrapUpMode = false;
             if (networkQueue.length > 0) {
                 document.getElementById('study-space').style.display = 'none';
                 document.getElementById('transition-screen').style.display = 'none';
@@ -793,10 +896,20 @@
         }
 
         function renderNextCardInstance() {
+            updateQueuePills();
+
             if (sessionPhase === 'new') {
                 const hasUnstudiedNewCards = activeQueue.some(card => !card.isRepairReview && card.count === 0);
                 if (!hasUnstudiedNewCards) {
                     showNewCardsCompleteTransition();
+                    return;
+                }
+            }
+
+            if (isUrgentWrapUpMode) {
+                const urgentIndex = activeQueue.findIndex(card => card.isRepairReview && !card.isWritingPractice);
+                if (urgentIndex === -1) {
+                    showUrgentWrapUpComplete();
                     return;
                 }
             }
@@ -809,14 +922,28 @@
             let card = null;
             let selectedQueueIndex = 0;
 
-            if (isOverstudyMode) {
+            if (isUrgentWrapUpMode) {
+                selectedQueueIndex = activeQueue.findIndex(queueCard => queueCard.isRepairReview && !queueCard.isWritingPractice);
+                card = activeQueue[selectedQueueIndex];
+                document.getElementById('progress-counter').innerText = "Urgent Review Mode";
+            } else if (isOverstudyMode) {
                 if (activeQueue.length > 0) {
                     for (let i = 0; i < activeQueue.length; i++) {
                         const repairIsReady = (activeQueue[i].freeReviewDelayRemaining || 0) <= 0;
-                        if (repairIsReady && !wordHistoryBuffer.includes(activeQueue[i].chinese)) {
+                        if (repairIsReady && !activeQueue[i].isWritingPractice && !wordHistoryBuffer.includes(activeQueue[i].chinese)) {
                             card = activeQueue[i];
                             selectedQueueIndex = i;
                             break;
+                        }
+                    }
+                    if (!card) {
+                        for (let i = 0; i < activeQueue.length; i++) {
+                            const writingIsReady = (activeQueue[i].freeReviewDelayRemaining || 0) <= 0;
+                            if (writingIsReady && activeQueue[i].isWritingPractice && !wordHistoryBuffer.includes(activeQueue[i].chinese)) {
+                                card = activeQueue[i];
+                                selectedQueueIndex = i;
+                                break;
+                            }
                         }
                     }
                 } else {
@@ -835,8 +962,7 @@
                     if (!card) card = masterDeck[0];
                 }
 
-                const repairCount = activeQueue.length;
-                document.getElementById('progress-counter').innerText = repairCount > 0 ? `Free Review · ${repairCount} repair` : "Free Review";
+                document.getElementById('progress-counter').innerText = "Free Review";
             } else {
                 for (let i = 0; i < activeQueue.length; i++) {
                     if (!wordHistoryBuffer.includes(activeQueue[i].chinese)) {
@@ -867,7 +993,9 @@
             document.getElementById('clue-trigger').style.display = 'none';
 
             document.getElementById('tap-hint').style.display = 'block';
+            document.getElementById('tap-hint').innerText = "Tap card to reveal answer";
             document.getElementById('grade-controls').style.display = 'none';
+            document.getElementById('writing-controls').style.display = 'none';
             document.getElementById('undo-element').style.visibility = historicalReviewStack.length > 0 ? 'visible' : 'hidden';
 
             const promptPane = document.getElementById('prompt-pane');
@@ -957,7 +1085,13 @@
             
             isRevealed = true;
             document.getElementById('tap-hint').style.display = 'none';
-            document.getElementById('grade-controls').style.display = 'grid';
+            if (window.activeCard.isWritingPractice) {
+                document.getElementById('tap-hint').innerText = "How did writing it feel?";
+                document.getElementById('tap-hint').style.display = 'block';
+                document.getElementById('writing-controls').style.display = 'grid';
+            } else {
+                document.getElementById('grade-controls').style.display = 'grid';
+            }
         }
 
         function submitPerformanceRating(scoreDelta) {
@@ -992,8 +1126,10 @@
                     historyEntry.generatedRepairGroupId = scheduleWritingPractice(baseCard, card.repairGroupId);
                 }
             } else if (wasRepairReview) {
-                let nextRepairPlan = card.remainingRepairPlan || [];
-                if (scoreDelta <= 2 && nextRepairPlan.length === 0) {
+                let nextRepairPlan = scoreDelta === 5 ? [] : (card.remainingRepairPlan || []);
+                if (scoreDelta < 5 && isUrgentWrapUpMode && nextRepairPlan.length === 0) {
+                    nextRepairPlan = [0];
+                } else if (scoreDelta <= 2 && nextRepairPlan.length === 0) {
                     nextRepairPlan = [8];
                 }
                 historyEntry.generatedRepairGroupId = scheduleRepairRepeat(baseCard, nextRepairPlan, card.repairGroupId);
@@ -1012,6 +1148,45 @@
             }
 
             renderNextCardInstance();
+        }
+
+        function handleWritingPracticeChoice(delayCards) {
+            const card = window.activeCard;
+            if (!card || !card.isWritingPractice) return;
+            const baseCard = card.sourceCard || card;
+
+            historicalReviewStack.push({
+                cardObject: card,
+                ratingDeltaApplied: 0,
+                previousScore: baseCard.score,
+                previousCount: baseCard.count,
+                previousLastTime: baseCard.lastTime,
+                wasInQueue: !isOverstudyMode,
+                queuePosition: window.currentActiveIndexInQueue,
+                sentToSpreadsheet: false,
+                repairGroupId: card.repairGroupId || null,
+                generatedRepairGroupId: null
+            });
+            const historyEntry = historicalReviewStack[historicalReviewStack.length - 1];
+
+            wordHistoryBuffer.push(baseCard.chinese);
+            if (wordHistoryBuffer.length > 3) wordHistoryBuffer.shift();
+            activeQueue.splice(window.currentActiveIndexInQueue, 1);
+            advanceFreeReviewRepairCountdowns();
+
+            if (delayCards !== null) {
+                historyEntry.generatedRepairGroupId = scheduleWritingPractice(baseCard, card.repairGroupId, delayCards);
+            }
+
+            renderNextCardInstance();
+        }
+
+        function resolveWritingPractice() {
+            handleWritingPracticeChoice(null);
+        }
+
+        function repeatWritingPractice(delayCards) {
+            handleWritingPracticeChoice(delayCards);
         }
 
         function triggerWritingRequeueLoop() {
