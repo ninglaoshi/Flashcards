@@ -1163,7 +1163,7 @@
             // EN_TO_CN PRODUCTION BIAS SORT MODIFIER
             pendingNewQueue.sort((a, b) => {
                 if (a.chinese !== b.chinese) return a.chinese.localeCompare(b.chinese);
-                return a.type === 'EN_TO_CN' ? 1 : -1;
+                return a.type === 'EN_TO_CN' ? -1 : 1;
             });
 
             pendingReviewQueue.sort((a, b) => {
@@ -1761,4 +1761,3 @@
     </script>
 </body>
 </html>
-
