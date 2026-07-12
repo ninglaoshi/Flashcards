@@ -14,8 +14,8 @@
             
             --front-card-bg: linear-gradient(135deg, #14b8a6 0%, #2563eb 100%);
             --front-new-bg: linear-gradient(135deg, #facc15 0%, #f97316 100%);
-            --front-urgent-bg: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
-            --front-writing-bg: linear-gradient(135deg, #a78bfa 0%, #6d28d9 100%);
+            --front-urgent-bg: linear-gradient(135deg, #0ea5a8 0%, #be5b84 100%);
+            --front-writing-bg: linear-gradient(135deg, #12a7b0 0%, #5b63c7 100%);
             --back-card-bg: #f8fafc;
             
             --btn-1: #ef4444;
@@ -686,9 +686,9 @@
         <div class="controls-wrapper">
             <div id="character-game-hint" class="hint-banner">Tap card to reveal answer</div>
             <div id="character-game-controls" class="game-controls" style="display: none;">
-                <button class="game-btn game-good" onclick="scoreCharacterGame('got')">Got It</button>
-                <button class="game-btn game-guess" onclick="scoreCharacterGame('guess')">Guessed Correctly</button>
                 <button class="game-btn game-miss" onclick="scoreCharacterGame('miss')">No Clue</button>
+                <button class="game-btn game-guess" onclick="scoreCharacterGame('guess')">Guessed Correctly</button>
+                <button class="game-btn game-good" onclick="scoreCharacterGame('got')">Got It</button>
             </div>
             <button class="game-wrap-btn" onclick="wrapUpCharacterGame()">Wrap It Up</button>
         </div>
@@ -713,6 +713,7 @@
         let vocabularyTermCount = 0;
         let isUrgentWrapUpMode = false;
         let urgentWrapStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0 };
+        let freeReviewStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0, writingReview: 0, writingAgain6: 0, writingAgain3: 0, writingDone: 0 };
         let characterGamePool = [];
         let characterGameQueue = [];
         let currentCharacterChallenge = null;
@@ -938,6 +939,48 @@
                 `Quizzed: ${characterGameStats.quizzed} · Right: ${characterGameStats.right} · Wrong: ${characterGameStats.wrong}`;
         }
 
+        function resetFreeReviewStats() {
+            freeReviewStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0, writingReview: 0, writingAgain6: 0, writingAgain3: 0, writingDone: 0 };
+        }
+
+        function countFreeReviewActions() {
+            return freeReviewStats.noClue + freeReviewStats.incorrect + freeReviewStats.guessed + freeReviewStats.hadToThink + freeReviewStats.knowIt +
+                freeReviewStats.writingReview + freeReviewStats.writingAgain6 + freeReviewStats.writingAgain3 + freeReviewStats.writingDone;
+        }
+
+        function recordFreeReviewRating(scoreDelta) {
+            if (sessionPhase !== 'free') return;
+            if (scoreDelta === 1) freeReviewStats.noClue += 1;
+            else if (scoreDelta === 2) freeReviewStats.incorrect += 1;
+            else if (scoreDelta === 3) freeReviewStats.guessed += 1;
+            else if (scoreDelta === 4) freeReviewStats.hadToThink += 1;
+            else if (scoreDelta === 5) freeReviewStats.knowIt += 1;
+        }
+
+        function showFreeReviewSummary() {
+            const totalTaps = countFreeReviewActions();
+            document.getElementById('study-space').style.display = 'none';
+            document.getElementById('transition-screen').style.display = 'block';
+            document.getElementById('transition-title').innerText = "End of Free Review";
+            document.getElementById('transition-copy').innerHTML = `
+                <div>Nice work. Here's what you did.</div>
+                <div class="wrap-summary">
+                    <div class="wrap-stat missed"><strong>${freeReviewStats.noClue}</strong><span>No Clue</span></div>
+                    <div class="wrap-stat missed"><strong>${freeReviewStats.incorrect}</strong><span>Incorrect</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.guessed}</strong><span>Guessed</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.hadToThink}</strong><span>Had to Think</span></div>
+                    <div class="wrap-stat known"><strong>${freeReviewStats.knowIt}</strong><span>I Know It</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.writingReview}</strong><span>Writing Review</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.writingAgain6}</strong><span>Again in 6</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.writingAgain3}</strong><span>Again in 3</span></div>
+                    <div class="wrap-stat known"><strong>${freeReviewStats.writingDone}</strong><span>Done Writing</span></div>
+                    <div class="wrap-stat"><strong>${totalTaps}</strong><span>Total Taps</span></div>
+                </div>
+            `;
+            document.getElementById('transition-btn').innerText = "Back to Dashboard";
+            document.getElementById('transition-btn').onclick = () => exitToDashboard(true);
+        }
+
         function startCharacterGame() {
             resetCharacterGameState();
             buildCharacterGamePool();
@@ -1159,6 +1202,7 @@
             wordHistoryBuffer = [];
             activeQueue = [];
             isOverstudyMode = false;
+            resetFreeReviewStats();
 
             if (pendingNewQueue.length > 0) {
                 sessionPhase = 'new';
@@ -1245,7 +1289,12 @@
             document.getElementById('transition-btn').onclick = exitToDashboard;
         }
 
-        function exitToDashboard() {
+        function exitToDashboard(skipFreeReviewSummary = false) {
+            if (!skipFreeReviewSummary && sessionPhase === 'free' && countFreeReviewActions() > 0) {
+                showFreeReviewSummary();
+                return;
+            }
+
             userWantsToExit = true;
             document.body.classList.remove('new-phase');
             isUrgentWrapUpMode = false;
@@ -1476,6 +1525,7 @@
             const baseCard = card.sourceCard || card;
             const wasRepairReview = card.isRepairReview === true;
             const wasWritingPractice = card.isWritingPractice === true;
+            recordFreeReviewRating(scoreDelta);
             const wasUrgentWrapUp = isUrgentWrapUpMode && wasRepairReview && !wasWritingPractice;
             if (wasUrgentWrapUp) {
                 if (scoreDelta === 1) urgentWrapStats.noClue += 1;
@@ -1541,6 +1591,12 @@
             if (!card || !card.isWritingPractice) return;
             const baseCard = card.sourceCard || card;
 
+            if (sessionPhase === 'free') {
+                if (delayCards === 6) freeReviewStats.writingAgain6 += 1;
+                else if (delayCards === 3) freeReviewStats.writingAgain3 += 1;
+                else if (delayCards === null) freeReviewStats.writingDone += 1;
+            }
+
             historicalReviewStack.push({
                 cardObject: card,
                 ratingDeltaApplied: 0,
@@ -1579,6 +1635,7 @@
             const card = window.activeCard;
             const baseCard = card.sourceCard || card;
             const wasWritingPractice = card.isWritingPractice === true;
+            if (sessionPhase === 'free') freeReviewStats.writingReview += 1;
             
             historicalReviewStack.push({
                 cardObject: card,
