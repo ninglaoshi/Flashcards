@@ -781,6 +781,7 @@
 
         let masterDeck = [];
         let activeQueue = [];
+        let freeReviewQueue = [];
         let pendingNewQueue = [];
         let pendingReviewQueue = [];
         let historicalReviewStack = [];
@@ -824,6 +825,7 @@
             pendingNewQueue = [];
             pendingReviewQueue = [];
             activeQueue = [];
+            freeReviewQueue = [];
             sessionPhase = 'dashboard';
             isUrgentWrapUpMode = false;
             resetCharacterGameState();
@@ -1039,12 +1041,56 @@
             return writingGroupId;
         }
 
-        function sortFreeReviewDeck() {
-            masterDeck.sort((a,b) => {
-                if (a.score !== b.score) return a.score - b.score;
-                if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
-                return (a.count || 0) - (b.count || 0);
+        function shuffleCards(cards) {
+            const shuffled = [...cards];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function buildFreeReviewQueue() {
+            const scoreBands = new Map();
+
+            masterDeck.forEach(card => {
+                const bandKey = Math.floor(clampScore(card.score) / 5);
+                if (!scoreBands.has(bandKey)) scoreBands.set(bandKey, []);
+                scoreBands.get(bandKey).push(card);
             });
+
+            const weakFirstCards = [...scoreBands.keys()]
+                .sort((a, b) => a - b)
+                .flatMap(bandKey => shuffleCards(scoreBands.get(bandKey)).sort((a, b) => {
+                    if ((a.count || 0) !== (b.count || 0)) return (a.count || 0) - (b.count || 0);
+                    if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
+                    return 0;
+                }));
+
+            const spacedQueue = [];
+            const recentTerms = [];
+            const candidates = [...weakFirstCards];
+
+            while (candidates.length > 0) {
+                let nextIndex = candidates.findIndex(candidate => !recentTerms.includes(candidate.chinese));
+                if (nextIndex === -1) nextIndex = 0;
+
+                const nextCard = candidates.splice(nextIndex, 1)[0];
+                spacedQueue.push(nextCard);
+                recentTerms.push(nextCard.chinese);
+                if (recentTerms.length > 3) recentTerms.shift();
+            }
+
+            freeReviewQueue = spacedQueue;
+        }
+
+        function selectNextFreeReviewCard() {
+            if (freeReviewQueue.length === 0) buildFreeReviewQueue();
+            if (freeReviewQueue.length === 0) return null;
+
+            let nextIndex = freeReviewQueue.findIndex(card => !wordHistoryBuffer.includes(card.chinese));
+            if (nextIndex === -1) nextIndex = 0;
+            return freeReviewQueue.splice(nextIndex, 1)[0];
         }
 
         function resetCharacterGameState() {
@@ -1367,6 +1413,7 @@
             } else {
                 sessionPhase = 'free';
                 isOverstudyMode = true;
+                buildFreeReviewQueue();
                 document.body.classList.remove('new-phase');
             }
 
@@ -1520,19 +1567,10 @@
                             }
                         }
                     }
-                } else {
-                    sortFreeReviewDeck();
                 }
 
                 if (!card) {
-                    sortFreeReviewDeck();
-
-                    for (let i = 0; i < masterDeck.length; i++) {
-                        if (!wordHistoryBuffer.includes(masterDeck[i].chinese)) {
-                            card = masterDeck[i];
-                            break;
-                        }
-                    }
+                    card = selectNextFreeReviewCard();
                     if (!card) card = masterDeck[0];
                 }
 
@@ -1910,4 +1948,3 @@
     </script>
 </body>
 </html>
-
