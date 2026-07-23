@@ -15,7 +15,7 @@
             --front-card-bg: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
             --front-new-bg: linear-gradient(135deg, #fbbf24 0%, #fb7185 100%);
             --front-urgent-bg: linear-gradient(135deg, #0ea5e9 0%, #18b68f 48%, #c65f83 100%);
-            --front-writing-bg: linear-gradient(135deg, #0ea5e9 0%, #12b3a2 50%, #7877d9 100%);
+            --front-quick-repeat-bg: linear-gradient(135deg, #7c3aed 0%, #db2777 48%, #f59e0b 100%);
             --back-card-bg: #f8fafc;
             
             --btn-1: #ef4444;
@@ -206,7 +206,7 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.16);
         }
         .urgent-pill { background: #e11d48; }
-        .writing-pill { background: #334155; cursor: default; }
+        .writing-pill { background: #7c3aed; cursor: default; }
         
         /* ENHANCED HOME BUTTON */
         .btn-nav-control {
@@ -264,7 +264,7 @@
         body.new-phase #prompt-pane.cn-mode,
         body.new-phase #prompt-pane.en-mode { background: var(--front-new-bg); }
         #prompt-pane.urgent-review-mode { background: var(--front-urgent-bg); }
-        #prompt-pane.writing-review-mode { background: var(--front-writing-bg); }
+        #prompt-pane.writing-review-mode { background: var(--front-quick-repeat-bg); }
 
         /* When answer is revealed, prompt slides to bottom 35% area */
         #prompt-pane.revealed-state {
@@ -430,7 +430,7 @@
         .grad-btn:active { transform: scale(0.92); }
         .grad-btn span { font-size: 1.1rem; }
         .writing-review-btn {
-            background: #334155;
+            background: #7c3aed;
             grid-column: 1 / span 2;
             width: 100%;
             height: 48px;
@@ -440,7 +440,7 @@
         }
         .writing-controls {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 8px;
             width: 100%;
         }
@@ -448,7 +448,7 @@
             border: none;
             color: white;
             height: 62px;
-            font-size: 0.72rem;
+            font-size: 0.66rem;
             font-weight: 800;
             border-radius: 12px;
             cursor: pointer;
@@ -690,7 +690,7 @@
                 <div class="counter-pill" id="progress-counter">Loading cards...</div>
                 <div class="queue-pills">
                     <button class="queue-pill urgent-pill" id="urgent-pill" onclick="startUrgentWrapUp()" style="display: none;">Urgent Reviews: 0</button>
-                    <button class="queue-pill writing-pill" id="writing-pill" style="display: none;">Writing Review: 0</button>
+                    <button class="queue-pill writing-pill" id="writing-pill" style="display: none;">Quick Repeat: 0</button>
                 </div>
             </div>
         </div>
@@ -726,12 +726,13 @@
                 <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Guessed</button>
                 <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Had to Think</button>
                 <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it</button>
-                <button class="grad-btn writing-review-btn" onclick="triggerWritingRequeueLoop()"><span>✍️</span>Writing Review</button>
+                <button class="grad-btn writing-review-btn" onclick="triggerWritingRequeueLoop()"><span>↻</span>Review Known Card</button>
             </div>
             <div id="writing-controls" class="writing-controls" style="display: none;">
+                <button class="writing-action-btn writing-later" onclick="repeatWritingPractice(10)">Again in 10</button>
                 <button class="writing-action-btn writing-later" onclick="repeatWritingPractice(6)">Again in 6</button>
                 <button class="writing-action-btn writing-soon" onclick="repeatWritingPractice(3)">Again in 3</button>
-                <button class="writing-action-btn writing-done" onclick="resolveWritingPractice()">Done Writing</button>
+                <button class="writing-action-btn writing-done" onclick="resolveWritingPractice()">Done Reviewing</button>
             </div>
         </div>
     </div>
@@ -794,8 +795,9 @@
         let learnedNewTermCount = 0;
         let vocabularyTermCount = 0;
         let isUrgentWrapUpMode = false;
+        let urgentWrapUpOrigin = null;
         let urgentWrapStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0 };
-        let freeReviewStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0, writingReview: 0, writingAgain6: 0, writingAgain3: 0, writingDone: 0 };
+        let freeReviewStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0, quickRepeat: 0, quickAgain10: 0, quickAgain6: 0, quickAgain3: 0, quickDone: 0 };
         let characterGamePool = [];
         let characterGameQueue = [];
         let currentCharacterChallenge = null;
@@ -828,6 +830,7 @@
             freeReviewQueue = [];
             sessionPhase = 'dashboard';
             isUrgentWrapUpMode = false;
+            urgentWrapUpOrigin = null;
             resetCharacterGameState();
             document.body.classList.remove('new-phase');
             
@@ -983,7 +986,7 @@
             urgentPill.style.display = urgentCount > 0 ? 'block' : 'none';
             urgentPill.innerText = `Urgent Reviews: ${urgentCount}`;
             writingPill.style.display = writingCount > 0 ? 'block' : 'none';
-            writingPill.innerText = `Writing Review: ${writingCount}`;
+            writingPill.innerText = `Quick Repeat: ${writingCount}`;
         }
 
         function advanceFreeReviewRepairCountdowns() {
@@ -1023,7 +1026,6 @@
             const baseCard = sourceCard.sourceCard || sourceCard;
             const writingCard = {
                 ...baseCard,
-                type: 'EN_TO_CN',
                 sourceCard: baseCard,
                 isRepairReview: true,
                 isWritingPractice: true,
@@ -1164,12 +1166,12 @@
         }
 
         function resetFreeReviewStats() {
-            freeReviewStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0, writingReview: 0, writingAgain6: 0, writingAgain3: 0, writingDone: 0 };
+            freeReviewStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0, quickRepeat: 0, quickAgain10: 0, quickAgain6: 0, quickAgain3: 0, quickDone: 0 };
         }
 
         function countFreeReviewActions() {
             return freeReviewStats.noClue + freeReviewStats.incorrect + freeReviewStats.guessed + freeReviewStats.hadToThink + freeReviewStats.knowIt +
-                freeReviewStats.writingReview + freeReviewStats.writingAgain6 + freeReviewStats.writingAgain3 + freeReviewStats.writingDone;
+                freeReviewStats.quickRepeat + freeReviewStats.quickAgain10 + freeReviewStats.quickAgain6 + freeReviewStats.quickAgain3 + freeReviewStats.quickDone;
         }
 
         function recordFreeReviewRating(scoreDelta) {
@@ -1194,10 +1196,11 @@
                     <div class="wrap-stat"><strong>${freeReviewStats.guessed}</strong><span>Guessed</span></div>
                     <div class="wrap-stat"><strong>${freeReviewStats.hadToThink}</strong><span>Had to Think</span></div>
                     <div class="wrap-stat known"><strong>${freeReviewStats.knowIt}</strong><span>I Know It</span></div>
-                    <div class="wrap-stat"><strong>${freeReviewStats.writingReview}</strong><span>Writing Review</span></div>
-                    <div class="wrap-stat"><strong>${freeReviewStats.writingAgain6}</strong><span>Again in 6</span></div>
-                    <div class="wrap-stat"><strong>${freeReviewStats.writingAgain3}</strong><span>Again in 3</span></div>
-                    <div class="wrap-stat known"><strong>${freeReviewStats.writingDone}</strong><span>Done Writing</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.quickRepeat}</strong><span>Quick Repeat</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.quickAgain10}</strong><span>Again in 10</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.quickAgain6}</strong><span>Again in 6</span></div>
+                    <div class="wrap-stat"><strong>${freeReviewStats.quickAgain3}</strong><span>Again in 3</span></div>
+                    <div class="wrap-stat known"><strong>${freeReviewStats.quickDone}</strong><span>Done Reviewing</span></div>
                     <div class="wrap-stat"><strong>${totalTaps}</strong><span>Total Taps</span></div>
                 </div>
             `;
@@ -1455,6 +1458,7 @@
 
         function startUrgentWrapUp() {
             if (countUrgentReviews() === 0) return;
+            urgentWrapUpOrigin = sessionPhase;
             isUrgentWrapUpMode = true;
             urgentWrapStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0 };
             sessionPhase = 'urgent';
@@ -1467,7 +1471,15 @@
         }
 
         function showUrgentWrapUpComplete() {
+            const shouldShowStats = urgentWrapUpOrigin === 'free';
             isUrgentWrapUpMode = false;
+            urgentWrapUpOrigin = null;
+
+            if (!shouldShowStats) {
+                exitToDashboard();
+                return;
+            }
+
             const totalTaps = urgentWrapStats.noClue + urgentWrapStats.incorrect + urgentWrapStats.guessed + urgentWrapStats.hadToThink + urgentWrapStats.knowIt;
             document.getElementById('study-space').style.display = 'none';
             document.getElementById('transition-screen').style.display = 'block';
@@ -1496,6 +1508,7 @@
             userWantsToExit = true;
             document.body.classList.remove('new-phase');
             isUrgentWrapUpMode = false;
+            urgentWrapUpOrigin = null;
             if (networkQueue.length > 0) {
                 document.getElementById('study-space').style.display = 'none';
                 document.getElementById('transition-screen').style.display = 'none';
@@ -1616,7 +1629,7 @@
 
             if (card.type === 'CN_TO_EN') {
                 promptPane.className = "slide-pane cn-mode";
-                document.getElementById('front-pill-tag').innerText = card.isWritingPractice ? "Writing Practice" : "Recognition";
+                document.getElementById('front-pill-tag').innerText = card.isWritingPractice ? "Quick Repeat" : "Recognition";
                 
                 const cnFrontLen = card.chinese.length;
                 if (cnFrontLen > 12) frontText.style.fontSize = "2.0rem";
@@ -1633,7 +1646,7 @@
                 document.getElementById('back-display-sub').innerText = card.pinyin;
             } else {
                 promptPane.className = "slide-pane en-mode";
-                document.getElementById('front-pill-tag').innerText = card.isWritingPractice ? "Writing Practice" : "Production";
+                document.getElementById('front-pill-tag').innerText = card.isWritingPractice ? "Quick Repeat" : "Production";
                 
                 document.getElementById('clue-trigger').style.display = 'block';
                 
@@ -1702,7 +1715,7 @@
             isRevealed = true;
             document.getElementById('tap-hint').style.display = 'none';
             if (window.activeCard.isWritingPractice) {
-                document.getElementById('tap-hint').innerText = "How did writing it feel?";
+                document.getElementById('tap-hint').innerText = "When should this come back?";
                 document.getElementById('tap-hint').style.display = 'block';
                 document.getElementById('writing-controls').style.display = 'grid';
             } else {
@@ -1781,9 +1794,10 @@
             const baseCard = card.sourceCard || card;
 
             if (sessionPhase === 'free') {
-                if (delayCards === 6) freeReviewStats.writingAgain6 += 1;
-                else if (delayCards === 3) freeReviewStats.writingAgain3 += 1;
-                else if (delayCards === null) freeReviewStats.writingDone += 1;
+                if (delayCards === 10) freeReviewStats.quickAgain10 += 1;
+                else if (delayCards === 6) freeReviewStats.quickAgain6 += 1;
+                else if (delayCards === 3) freeReviewStats.quickAgain3 += 1;
+                else if (delayCards === null) freeReviewStats.quickDone += 1;
             }
 
             historicalReviewStack.push({
@@ -1825,7 +1839,7 @@
             const baseCard = card.sourceCard || card;
             const wasWritingPractice = card.isWritingPractice === true;
             const shouldUpdateLongTermScore = !wasWritingPractice && card.isRepairReview !== true && sessionPhase !== 'free';
-            if (sessionPhase === 'free') freeReviewStats.writingReview += 1;
+            if (sessionPhase === 'free') freeReviewStats.quickRepeat += 1;
             
             historicalReviewStack.push({
                 cardObject: card,
@@ -1856,7 +1870,7 @@
                 applyLongTermScoreUpdate(baseCard, 5);
             }
 
-            const writingGroupId = card.repairGroupId || `writing-${++repairGroupCounter}`;
+            const writingGroupId = card.repairGroupId || `quick-${++repairGroupCounter}`;
             historyEntry.generatedRepairGroupId = scheduleWritingPractice(baseCard, writingGroupId);
 
             renderNextCardInstance();
@@ -1948,4 +1962,3 @@
     </script>
 </body>
 </html>
-
