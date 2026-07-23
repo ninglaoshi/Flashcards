@@ -207,6 +207,7 @@
         }
         .urgent-pill { background: #e11d48; }
         .writing-pill { background: #7c3aed; cursor: default; }
+        .wrap-pill { background: #0f172a; }
         
         /* ENHANCED HOME BUTTON */
         .btn-nav-control {
@@ -689,7 +690,8 @@
             <div class="session-status">
                 <div class="counter-pill" id="progress-counter">Loading cards...</div>
                 <div class="queue-pills">
-                    <button class="queue-pill urgent-pill" id="urgent-pill" onclick="startUrgentWrapUp()" style="display: none;">Urgent Reviews: 0</button>
+                    <button class="queue-pill wrap-pill" id="wrap-pill" onclick="startUrgentWrapUp()" style="display: none;">Wrap It Up!</button>
+                    <button class="queue-pill urgent-pill" id="urgent-pill" style="display: none;">Urgent Reviews: 0</button>
                     <button class="queue-pill writing-pill" id="writing-pill" style="display: none;">Quick Repeat: 0</button>
                 </div>
             </div>
@@ -977,12 +979,19 @@
             return activeQueue.filter(card => card.isWritingPractice).length;
         }
 
+        function countWrapUpReviews() {
+            return activeQueue.filter(card => card.isRepairReview).length;
+        }
+
         function updateQueuePills() {
             const urgentCount = countUrgentReviews();
             const writingCount = countWritingReviews();
+            const wrapCount = urgentCount + writingCount;
+            const wrapPill = document.getElementById('wrap-pill');
             const urgentPill = document.getElementById('urgent-pill');
             const writingPill = document.getElementById('writing-pill');
 
+            wrapPill.style.display = wrapCount > 0 ? 'block' : 'none';
             urgentPill.style.display = urgentCount > 0 ? 'block' : 'none';
             urgentPill.innerText = `Urgent Reviews: ${urgentCount}`;
             writingPill.style.display = writingCount > 0 ? 'block' : 'none';
@@ -1034,10 +1043,12 @@
             };
 
             if (isOverstudyMode) {
-                writingCard.freeReviewDelayRemaining = delayCards;
+                writingCard.freeReviewDelayRemaining = isUrgentWrapUpMode ? 0 : delayCards;
                 activeQueue.push(writingCard);
             } else {
-                const insertIndex = Math.min(delayCards, activeQueue.length);
+                const insertIndex = isUrgentWrapUpMode
+                    ? activeQueue.length
+                    : Math.min(delayCards, activeQueue.length);
                 activeQueue.splice(insertIndex, 0, writingCard);
             }
             return writingGroupId;
@@ -1457,7 +1468,7 @@
         }
 
         function startUrgentWrapUp() {
-            if (countUrgentReviews() === 0) return;
+            if (countWrapUpReviews() === 0) return;
             urgentWrapUpOrigin = sessionPhase;
             isUrgentWrapUpMode = true;
             urgentWrapStats = { noClue: 0, incorrect: 0, guessed: 0, hadToThink: 0, knowIt: 0 };
@@ -1471,32 +1482,9 @@
         }
 
         function showUrgentWrapUpComplete() {
-            const shouldShowStats = urgentWrapUpOrigin === 'free';
             isUrgentWrapUpMode = false;
             urgentWrapUpOrigin = null;
-
-            if (!shouldShowStats) {
-                exitToDashboard();
-                return;
-            }
-
-            const totalTaps = urgentWrapStats.noClue + urgentWrapStats.incorrect + urgentWrapStats.guessed + urgentWrapStats.hadToThink + urgentWrapStats.knowIt;
-            document.getElementById('study-space').style.display = 'none';
-            document.getElementById('transition-screen').style.display = 'block';
-            document.getElementById('transition-title').innerText = "End of Session";
-            document.getElementById('transition-copy').innerHTML = `
-                <div>You cleared your urgent reviews.</div>
-                <div class="wrap-summary">
-                    <div class="wrap-stat missed"><strong>${urgentWrapStats.noClue}</strong><span>No Clue</span></div>
-                    <div class="wrap-stat missed"><strong>${urgentWrapStats.incorrect}</strong><span>Incorrect</span></div>
-                    <div class="wrap-stat"><strong>${urgentWrapStats.guessed}</strong><span>Guessed</span></div>
-                    <div class="wrap-stat"><strong>${urgentWrapStats.hadToThink}</strong><span>Had to Think</span></div>
-                    <div class="wrap-stat known"><strong>${urgentWrapStats.knowIt}</strong><span>I Know It</span></div>
-                    <div class="wrap-stat"><strong>${totalTaps}</strong><span>Total Taps</span></div>
-                </div>
-            `;
-            document.getElementById('transition-btn').innerText = "Back to Dashboard";
-            document.getElementById('transition-btn').onclick = exitToDashboard;
+            exitToDashboard();
         }
 
         function exitToDashboard(skipFreeReviewSummary = false) {
@@ -1541,8 +1529,8 @@
             }
 
             if (isUrgentWrapUpMode) {
-                const urgentIndex = activeQueue.findIndex(card => card.isRepairReview && !card.isWritingPractice);
-                if (urgentIndex === -1) {
+                const wrapUpIndex = activeQueue.findIndex(card => card.isRepairReview);
+                if (wrapUpIndex === -1) {
                     showUrgentWrapUpComplete();
                     return;
                 }
@@ -1557,9 +1545,9 @@
             let selectedQueueIndex = 0;
 
             if (isUrgentWrapUpMode) {
-                selectedQueueIndex = activeQueue.findIndex(queueCard => queueCard.isRepairReview && !queueCard.isWritingPractice);
+                selectedQueueIndex = activeQueue.findIndex(queueCard => queueCard.isRepairReview);
                 card = activeQueue[selectedQueueIndex];
-                document.getElementById('progress-counter').innerText = "Urgent Review Mode";
+                document.getElementById('progress-counter').innerText = "Wrap It Up";
             } else if (isOverstudyMode) {
                 if (activeQueue.length > 0) {
                     for (let i = 0; i < activeQueue.length; i++) {
