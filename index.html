@@ -171,6 +171,7 @@
         }
         .header-left-actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             align-items: center;
         }
@@ -202,12 +203,17 @@
             font-size: 0.68rem;
             font-weight: 800;
             color: white;
-            cursor: pointer;
+            cursor: default;
             box-shadow: 0 2px 6px rgba(0,0,0,0.16);
         }
         .urgent-pill { background: #e11d48; }
         .writing-pill { background: #7c3aed; cursor: default; }
-        .wrap-pill { background: #0f172a; }
+        .wrap-action {
+            background: #0f172a;
+            color: #ffffff;
+            border-color: rgba(15, 23, 42, 0.25);
+        }
+        .wrap-action:active { background: #1e293b; }
         
         /* ENHANCED HOME BUTTON */
         .btn-nav-control {
@@ -683,16 +689,18 @@
                 <button class="btn-nav-control" id="home-element" onclick="exitToDashboard()">
                     <span>🏠</span> Home
                 </button>
-                <button class="btn-nav-control" id="undo-element" onclick="triggerUndo()" style="visibility: hidden;">
-                    <span>↩</span> Undo
+                <button class="btn-nav-control" id="undo-element" onclick="triggerBack()">
+                    <span>↩</span> Back
+                </button>
+                <button class="btn-nav-control wrap-action" id="wrap-pill" onclick="startUrgentWrapUp()" style="display: none;">
+                    Wrap It Up!
                 </button>
             </div>
             <div class="session-status">
                 <div class="counter-pill" id="progress-counter">Loading cards...</div>
                 <div class="queue-pills">
-                    <button class="queue-pill wrap-pill" id="wrap-pill" onclick="startUrgentWrapUp()" style="display: none;">Wrap It Up!</button>
-                    <button class="queue-pill urgent-pill" id="urgent-pill" style="display: none;">Urgent Reviews: 0</button>
-                    <button class="queue-pill writing-pill" id="writing-pill" style="display: none;">Quick Repeat: 0</button>
+                    <span class="queue-pill urgent-pill" id="urgent-pill" style="display: none;">Urgent: 0</span>
+                    <span class="queue-pill writing-pill" id="writing-pill" style="display: none;">Quick: 0</span>
                 </div>
             </div>
         </div>
@@ -993,9 +1001,9 @@
 
             wrapPill.style.display = wrapCount > 0 ? 'block' : 'none';
             urgentPill.style.display = urgentCount > 0 ? 'block' : 'none';
-            urgentPill.innerText = `Urgent Reviews: ${urgentCount}`;
+            urgentPill.innerText = `Urgent: ${urgentCount}`;
             writingPill.style.display = writingCount > 0 ? 'block' : 'none';
-            writingPill.innerText = `Quick Repeat: ${writingCount}`;
+            writingPill.innerText = `Quick: ${writingCount}`;
         }
 
         function advanceFreeReviewRepairCountdowns() {
@@ -1103,6 +1111,7 @@
 
             let nextIndex = freeReviewQueue.findIndex(card => !wordHistoryBuffer.includes(card.chinese));
             if (nextIndex === -1) nextIndex = 0;
+            window.currentFreeReviewQueueIndex = nextIndex;
             return freeReviewQueue.splice(nextIndex, 1)[0];
         }
 
@@ -1543,6 +1552,7 @@
 
             let card = null;
             let selectedQueueIndex = 0;
+            let selectedQueueSource = 'activeQueue';
 
             if (isUrgentWrapUpMode) {
                 selectedQueueIndex = activeQueue.findIndex(queueCard => queueCard.isRepairReview);
@@ -1572,6 +1582,8 @@
 
                 if (!card) {
                     card = selectNextFreeReviewCard();
+                    selectedQueueIndex = window.currentFreeReviewQueueIndex || 0;
+                    selectedQueueSource = 'freeReviewQueue';
                     if (!card) card = masterDeck[0];
                 }
 
@@ -1595,6 +1607,7 @@
 
             window.activeCard = card;
             window.currentActiveIndexInQueue = selectedQueueIndex;
+            window.currentQueueSource = selectedQueueSource;
 
             document.getElementById('prompt-pane').classList.remove('revealed-state');
             document.getElementById('answer-pane').classList.remove('revealed-state');
@@ -1609,7 +1622,6 @@
             document.getElementById('tap-hint').innerText = "Tap card to reveal answer";
             document.getElementById('grade-controls').style.display = 'none';
             document.getElementById('writing-controls').style.display = 'none';
-            document.getElementById('undo-element').style.visibility = historicalReviewStack.length > 0 ? 'visible' : 'hidden';
 
             const promptPane = document.getElementById('prompt-pane');
             const frontText = document.getElementById('front-display-text');
@@ -1734,6 +1746,7 @@
                 previousCount: baseCard.count,
                 previousLastTime: baseCard.lastTime,
                 wasInQueue: !isOverstudyMode,
+                queueSource: window.currentQueueSource || 'activeQueue',
                 queuePosition: window.currentActiveIndexInQueue,
                 sentToSpreadsheet: shouldUpdateLongTermScore,
                 repairGroupId: card.repairGroupId || null,
@@ -1795,6 +1808,7 @@
                 previousCount: baseCard.count,
                 previousLastTime: baseCard.lastTime,
                 wasInQueue: !isOverstudyMode,
+                queueSource: window.currentQueueSource || 'activeQueue',
                 queuePosition: window.currentActiveIndexInQueue,
                 sentToSpreadsheet: false,
                 repairGroupId: card.repairGroupId || null,
@@ -1822,6 +1836,49 @@
             handleWritingPracticeChoice(delayCards);
         }
 
+        function restoreFrontTextSize(card) {
+            const frontText = document.getElementById('front-display-text');
+            if (card.type === 'CN_TO_EN') {
+                const cnFrontLen = card.chinese.length;
+                if (cnFrontLen > 12) frontText.style.fontSize = "2.0rem";
+                else if (cnFrontLen > 6) frontText.style.fontSize = "2.6rem";
+                else frontText.style.fontSize = "3.2rem";
+            } else {
+                const enFrontLen = card.english.length;
+                if (enFrontLen > 90) frontText.style.fontSize = "1.2rem";
+                else if (enFrontLen > 50) frontText.style.fontSize = "1.5rem";
+                else if (enFrontLen > 25) frontText.style.fontSize = "2.0rem";
+                else frontText.style.fontSize = "2.6rem";
+            }
+        }
+
+        function hideCurrentAnswer() {
+            const card = window.activeCard;
+            if (!card) return;
+
+            document.getElementById('prompt-pane').classList.remove('revealed-state');
+            document.getElementById('answer-pane').classList.remove('revealed-state');
+            document.getElementById('back-display-sub').classList.remove('expanded-from-clue');
+            document.getElementById('grade-controls').style.display = 'none';
+            document.getElementById('writing-controls').style.display = 'none';
+            document.getElementById('tap-hint').innerText = "Tap card to reveal answer";
+            document.getElementById('tap-hint').style.display = 'block';
+            document.getElementById('clue-display-box').style.display = 'none';
+            clueWasActivated = false;
+            document.getElementById('clue-trigger').style.display = card.type === 'EN_TO_CN' ? 'block' : 'none';
+            restoreFrontTextSize(card);
+            isRevealed = false;
+        }
+
+        function triggerBack() {
+            if (isRevealed) {
+                hideCurrentAnswer();
+                return;
+            }
+
+            triggerUndo();
+        }
+
         function triggerWritingRequeueLoop() {
             const card = window.activeCard;
             const baseCard = card.sourceCard || card;
@@ -1836,6 +1893,7 @@
                 previousCount: baseCard.count,
                 previousLastTime: baseCard.lastTime,
                 wasInQueue: !isOverstudyMode,
+                queueSource: window.currentQueueSource || 'activeQueue',
                 queuePosition: window.currentActiveIndexInQueue,
                 sentToSpreadsheet: shouldUpdateLongTermScore,
                 repairGroupId: card.repairGroupId || null,
@@ -1890,7 +1948,13 @@
                 baseCard.lastTime = logEntry.previousLastTime;
             }
             
-            if (logEntry.wasInQueue) activeQueue.splice(logEntry.queuePosition, 0, card);
+            if (logEntry.queueSource === 'freeReviewQueue') {
+                const restoreIndex = Math.min(logEntry.queuePosition || 0, freeReviewQueue.length);
+                freeReviewQueue.splice(restoreIndex, 0, card);
+            } else {
+                const restoreIndex = Math.min(logEntry.queuePosition || 0, activeQueue.length);
+                activeQueue.splice(restoreIndex, 0, card);
+            }
             if(sessionPhase !== 'free' && activeQueue.length > 0) isOverstudyMode = false;
             renderNextCardInstance();
         }
