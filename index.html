@@ -947,8 +947,7 @@
         function formatElapsedSince(dateValue) {
             if (!dateValue) return "New";
             const elapsedMinutes = Math.max(0, Math.floor((new Date() - dateValue) / (1000 * 60)));
-            if (elapsedMinutes < 1) return "just now";
-            if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+            if (elapsedMinutes < 720) return "recently";
             const elapsedHours = Math.floor(elapsedMinutes / 60);
             if (elapsedHours < 24) return `${elapsedHours}h ago`;
             const elapsedDays = Math.floor(elapsedHours / 24);
@@ -957,13 +956,31 @@
             return `${elapsedMonths}mo ago`;
         }
 
+        function formatDueTiming(card) {
+            const baseCard = card.sourceCard || card;
+            if (!baseCard.lastTime || (baseCard.count || 0) === 0) return "";
+
+            const intervalDays = calculateReviewIntervalDays(baseCard.score);
+            const daysElapsed = (new Date() - baseCard.lastTime) / (1000 * 60 * 60 * 24);
+            const daysUntilDue = intervalDays - daysElapsed;
+
+            if (daysUntilDue <= 0) return "Due now";
+
+            const hoursUntilDue = daysUntilDue * 24;
+            if (hoursUntilDue < 24) return `Due in ${Math.ceil(hoursUntilDue)}h`;
+            return `Due in ${Math.ceil(daysUntilDue)}d`;
+        }
+
         function getCardMetaText(card) {
             const baseCard = card.sourceCard || card;
             const scoreText = `Score ${clampScore(baseCard.score)}/50`;
             const reviewText = baseCard.count > 0 && baseCard.lastTime
-                ? `Last reviewed ${formatElapsedSince(baseCard.lastTime)}`
+                ? `Reviewed ${formatElapsedSince(baseCard.lastTime)}`
                 : (baseCard.count > 0 ? "Last reviewed unknown" : "Not reviewed yet");
-            return `${scoreText} · ${reviewText}`;
+            const dueText = sessionPhase === 'free' || isOverstudyMode
+                ? formatDueTiming(card)
+                : "";
+            return [scoreText, reviewText, dueText].filter(Boolean).join(" · ");
         }
 
         function buildRepairPlan(scoreDelta) {
@@ -1072,25 +1089,17 @@
         }
 
         function buildFreeReviewQueue() {
-            const scoreBands = new Map();
+            let candidates = masterDeck.filter(card => clampScore(card.score) > 20);
+            if (candidates.length < 10) {
+                candidates = masterDeck.filter(card => clampScore(card.score) > 0);
+            }
+            if (candidates.length < 10) {
+                candidates = [...masterDeck];
+            }
 
-            masterDeck.forEach(card => {
-                const bandKey = Math.floor(clampScore(card.score) / 5);
-                if (!scoreBands.has(bandKey)) scoreBands.set(bandKey, []);
-                scoreBands.get(bandKey).push(card);
-            });
-
-            const weakFirstCards = [...scoreBands.keys()]
-                .sort((a, b) => a - b)
-                .flatMap(bandKey => shuffleCards(scoreBands.get(bandKey)).sort((a, b) => {
-                    if ((a.count || 0) !== (b.count || 0)) return (a.count || 0) - (b.count || 0);
-                    if (a.type !== b.type) return a.type === 'EN_TO_CN' ? -1 : 1;
-                    return 0;
-                }));
-
+            candidates = shuffleCards(candidates);
             const spacedQueue = [];
             const recentTerms = [];
-            const candidates = [...weakFirstCards];
 
             while (candidates.length > 0) {
                 let nextIndex = candidates.findIndex(candidate => !recentTerms.includes(candidate.chinese));
@@ -2014,4 +2023,3 @@
     </script>
 </body>
 </html>
-
