@@ -417,6 +417,9 @@
             word-break: break-word; 
             transition: font-size 0.3s;
         }
+        .chinese-display {
+            font-family: "Kaiti SC", "STKaiti", "KaiTi", "BiauKai", serif;
+        }
         #prompt-pane.revealed-state .main-text {
             font-size: 1.4rem !important;
             line-height: 1.2;
@@ -454,7 +457,7 @@
         .grad-btn {
             border: none;
             color: white;
-            height: 75px; 
+            min-height: 86px; 
             font-size: 0.62rem;
             font-weight: 700;
             border-radius: 18px;
@@ -470,6 +473,13 @@
         }
         .grad-btn:active { transform: scale(0.92); }
         .grad-btn span { font-size: 1.1rem; }
+        .score-preview {
+            min-height: 22px;
+            font-size: 0.54rem;
+            line-height: 1.15;
+            font-weight: 800;
+            opacity: 0.86;
+        }
         .writing-review-btn {
             background: #7c3aed;
             grid-column: 1 / span 2;
@@ -766,11 +776,11 @@
         <div class="controls-wrapper">
             <div id="tap-hint" class="hint-banner">Tap card to reveal answer</div>
             <div id="grade-controls" class="grading-grid" style="display: none;">
-                <button class="grad-btn b1" onclick="submitPerformanceRating(1)"><span>❌</span>No Clue</button>
-                <button class="grad-btn b2" onclick="submitPerformanceRating(2)"><span>⏳</span>Incorrect</button>
-                <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Guessed</button>
-                <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Had to Think</button>
-                <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it</button>
+                <button class="grad-btn b1" onclick="submitPerformanceRating(1)"><span>❌</span>No Clue<div class="score-preview" id="grade-preview-1"></div></button>
+                <button class="grad-btn b2" onclick="submitPerformanceRating(2)"><span>⏳</span>Incorrect<div class="score-preview" id="grade-preview-2"></div></button>
+                <button class="grad-btn b3" onclick="submitPerformanceRating(3)"><span>🤔</span>Guessed<div class="score-preview" id="grade-preview-3"></div></button>
+                <button class="grad-btn b4" onclick="submitPerformanceRating(4)"><span>✅</span>Had to Think<div class="score-preview" id="grade-preview-4"></div></button>
+                <button class="grad-btn b5" onclick="submitPerformanceRating(5)"><span>⚡</span>I know it<div class="score-preview" id="grade-preview-5"></div></button>
                 <button class="grad-btn writing-review-btn" onclick="triggerWritingRequeueLoop()"><span>↻</span>Review Known Card</button>
             </div>
             <div id="writing-controls" class="writing-controls" style="display: none;">
@@ -804,8 +814,8 @@
                 <div class="game-question" id="character-game-question">第 1 个字怎么写？</div>
             </div>
             <div class="game-answer-pane">
-                <div class="game-answer-char" id="character-game-answer-char">字</div>
-                <div class="game-answer-term" id="character-game-answer-term">...</div>
+                <div class="game-answer-char chinese-display" id="character-game-answer-char">字</div>
+                <div class="game-answer-term chinese-display" id="character-game-answer-term">...</div>
                 <div class="game-answer-pinyin" id="character-game-answer-pinyin">...</div>
             </div>
         </div>
@@ -958,10 +968,10 @@
                 return 12;
             }
 
-            if (scoreDelta === 1) return clampScore(currentScore * 0.40);
-            if (scoreDelta === 2) return clampScore(currentScore * 0.60);
-            if (scoreDelta === 3) return clampScore(currentScore * 0.70);
-            if (scoreDelta === 4) return clampScore(currentScore * 0.85);
+            if (scoreDelta === 1) return clampScore(currentScore * 0.60);
+            if (scoreDelta === 2) return clampScore(currentScore * 0.75);
+            if (scoreDelta === 3) return clampScore(currentScore * 0.85);
+            if (scoreDelta === 4) return clampScore(currentScore * 0.95);
             return clampScore(currentScore + 5);
         }
 
@@ -1006,6 +1016,14 @@
             return `Due in ${Math.ceil(daysUntilDue)}d`;
         }
 
+        function formatIntervalPreview(score) {
+            const intervalDays = calculateReviewIntervalDays(score);
+            if (intervalDays <= 0) return "now";
+            const intervalHours = intervalDays * 24;
+            if (intervalHours < 24) return `${Math.max(1, Math.ceil(intervalHours))}h`;
+            return `${Math.max(1, Math.ceil(intervalDays))}d`;
+        }
+
         function getCardMetaText(card) {
             const baseCard = card.sourceCard || card;
             const scoreText = `Score ${clampScore(baseCard.score)}/50`;
@@ -1016,6 +1034,25 @@
                 ? formatDueTiming(card)
                 : "";
             return [scoreText, reviewText, dueText].filter(Boolean).join(" · ");
+        }
+
+        function updateGradingButtonPreviews(card) {
+            const baseCard = card.sourceCard || card;
+            const isLocalOnly = card.isRepairReview === true || card.isWritingPractice === true;
+
+            for (let scoreDelta = 1; scoreDelta <= 5; scoreDelta++) {
+                const previewNode = document.getElementById(`grade-preview-${scoreDelta}`);
+                if (!previewNode) continue;
+
+                const changesLongTermScore = !isLocalOnly && (sessionPhase !== 'free' || scoreDelta < 5);
+                if (!changesLongTermScore) {
+                    previewNode.innerText = isLocalOnly ? "Local only" : "No score change";
+                    continue;
+                }
+
+                const nextScore = calculateNextScore(baseCard, scoreDelta);
+                previewNode.innerText = `S${nextScore} · ${formatIntervalPreview(nextScore)}`;
+            }
         }
 
         function buildRepairPlan(scoreDelta) {
@@ -1670,10 +1707,13 @@
             const promptPane = document.getElementById('prompt-pane');
             const frontText = document.getElementById('front-display-text');
             const backText = document.getElementById('back-display-main');
+            frontText.classList.remove('chinese-display');
+            backText.classList.remove('chinese-display');
 
             if (card.type === 'CN_TO_EN') {
                 promptPane.className = "slide-pane cn-mode";
                 document.getElementById('front-pill-tag').innerText = card.isWritingPractice ? "Quick Repeat" : "Recognition";
+                frontText.classList.add('chinese-display');
                 
                 const cnFrontLen = card.chinese.length;
                 if (cnFrontLen > 12) frontText.style.fontSize = "2.0rem";
@@ -1691,6 +1731,7 @@
             } else {
                 promptPane.className = "slide-pane en-mode";
                 document.getElementById('front-pill-tag').innerText = card.isWritingPractice ? "Quick Repeat" : "Production";
+                backText.classList.add('chinese-display');
                 
                 document.getElementById('clue-trigger').style.display = 'block';
                 
@@ -1715,6 +1756,7 @@
             promptPane.classList.toggle('writing-review-mode', card.isWritingPractice === true);
             promptPane.classList.toggle('urgent-review-mode', card.isRepairReview === true && card.isWritingPractice !== true);
             document.getElementById('card-meta-display').innerText = getCardMetaText(card);
+            updateGradingButtonPreviews(card);
         }
 
         function generatePinyinClue(event) {
@@ -2058,4 +2100,3 @@
     </script>
 </body>
 </html>
-
